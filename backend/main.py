@@ -4,6 +4,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import csv, io, os
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,6 +24,46 @@ ALLOWED_EXTENSIONS = {".txt", ".vtt"}
 class ChatRequest(BaseModel):
     question: str
     meeting_ids: Optional[List[str]] = None
+
+def _tokenize(text: str) -> set:
+    words = re.findall(r"[a-zA-Z]{4,}", (text or "").lower())
+    return set(words)
+
+def _decision_polarity(text: str) -> str:
+    t = (text or "").lower()
+    if any(k in t for k in ["delay", "defer", "pause", "postpone", "cancel", "stop"]):
+        return "negative"
+    if any(k in t for k in ["launch", "ship", "start", "approve", "move forward", "accelerate"]):
+        return "positive"
+    return "neutral"
+
+def _find_conflicts(meeting_id: str) -> list:
+    target = get_meeting(meeting_id)
+    if not target or not target.get("intel"):
+        return []
+    conflicts = []
+    target_decisions = target["intel"].get("decisions", [])
+    for other in get_all_meetings():
+        if other["id"] == meeting_id or not other.get("intel"):
+            continue
+        other_decisions = other["intel"].get("decisions", [])
+        for td in target_decisions:
+            for od in other_decisions:
+                shared = _tokenize(td.get("decision", "")) & _tokenize(od.get("decision", ""))
+                if len(shared) < 2:
+                    continue
+                tp = _decision_polarity(td.get("decision", ""))
+                op = _decision_polarity(od.get("decision", ""))
+                if {tp, op} == {"positive", "negative"}:
+                    conflicts.append({
+                        "topic": ", ".join(sorted(list(shared))[:4]),
+                        "severity": "High",
+                        "current_meeting": target["name"],
+                        "current_decision": td.get("decision", ""),
+                        "previous_meeting": other["name"],
+                        "previous_decision": od.get("decision", "")
+                    })
+    return conflicts
 
 def run_extraction(meeting_id: str):
     try:
@@ -75,7 +116,15 @@ def get_meeting_detail(meeting_id: str):
         raise HTTPException(status_code=404, detail="Mission file not found.")
     return {"id": meeting["id"], "name": meeting["name"], "filename": meeting["filename"],
             "uploaded_at": meeting["uploaded_at"], "speakers": meeting["speakers"],
-            "word_count": meeting["word_count"], "status": meeting["status"], "intel": meeting["intel"]}
+            "word_count": meeting["word_count"], "status": meeting["status"],
+            "segments": meeting.get("segments", []), "intel": meeting["intel"]}
+
+@app.get("/api/meetings/{meeting_id}/conflicts")
+def meeting_conflicts(meeting_id: str):
+    meeting = get_meeting(meeting_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Mission file not found.")
+    return {"meeting_id": meeting_id, "conflicts": _find_conflicts(meeting_id)}
 
 @app.delete("/api/meetings/{meeting_id}")
 def remove_meeting(meeting_id: str):

@@ -3,6 +3,8 @@ import { X, Shield } from 'lucide-react'
 
 export default function BriefCard({ brief, loading, onClose }) {
   if (!brief && !loading) return null
+  const intelBullets = (brief?.key_intel?.length ? brief.key_intel : brief?.key_points || []).slice(0, 5)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="relative bg-ops-dark border border-ops-gold/40 max-w-2xl w-full max-h-[85vh] overflow-y-auto gold-glow">
@@ -38,10 +40,10 @@ export default function BriefCard({ brief, loading, onClose }) {
               </div>
             )}
             {brief.threat_reason && <div className="border-l-2 border-ops-gold pl-4"><p className="text-ops-muted text-xs italic">{brief.threat_reason}</p></div>}
-            {brief.key_intel?.length > 0 && (
+            {intelBullets.length > 0 && (
               <div>
-                <p className="font-mono text-[10px] text-ops-gold tracking-widest mb-3">KEY INTELLIGENCE</p>
-                <ul className="space-y-2">{brief.key_intel.map((item, i) => <li key={i} className="flex gap-3 text-sm text-ops-text"><span className="text-ops-gold mt-0.5 shrink-0">◆</span><span>{item}</span></li>)}</ul>
+                <p className="font-mono text-[10px] text-ops-gold tracking-widest mb-3">FIVE-POINT BRIEF</p>
+                <ul className="space-y-2">{intelBullets.map((item, i) => <li key={i} className="flex gap-3 text-sm text-ops-text"><span className="text-ops-gold mt-0.5 shrink-0">◆</span><span>{item}</span></li>)}</ul>
               </div>
             )}
             {brief.orders?.length > 0 && (

@@ -7,21 +7,57 @@ export default function ChatPanel({ meetingId }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [typingId, setTypingId] = useState(null)
   const bottomRef = useRef(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  useEffect(() => {
+    if (typingId === null) return
+    const target = messages.find(m => m.id === typingId)
+    if (!target || target.role !== 'assistant') return
+    const full = target.data?.fullAnswer || ''
+    const shown = target.data?.answer || ''
+    if (shown.length >= full.length) {
+      setTypingId(null)
+      return
+    }
+    const timer = setTimeout(() => {
+      setMessages(prev => prev.map(m => m.id === typingId
+        ? { ...m, data: { ...m.data, answer: full.slice(0, shown.length + 3) } }
+        : m
+      ))
+    }, 18)
+    return () => clearTimeout(timer)
+  }, [messages, typingId])
 
   const send = async () => {
     const q = input.trim()
     if (!q || loading) return
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', text: q }])
+    const msgId = Date.now()
+    setMessages(prev => [...prev, { id: msgId, role: 'user', text: q }])
     setLoading(true)
     try {
       const res = await chat(q, meetingId ? [meetingId] : null)
-      setMessages(prev => [...prev, { role: 'assistant', data: res.data }])
+      const answer = res.data?.answer || 'No answer generated.'
+      const assistantId = msgId + 1
+      setMessages(prev => [...prev, {
+        id: assistantId,
+        role: 'assistant',
+        data: {
+          ...res.data,
+          fullAnswer: answer,
+          answer: '',
+        }
+      }])
+      setTypingId(assistantId)
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', data: { answer: 'Error reaching server.', citations: [], confidence: 'Low', found_in_transcripts: false } }])
+      setMessages(prev => [...prev, {
+        id: msgId + 1,
+        role: 'assistant',
+        data: { answer: 'Error reaching server.', fullAnswer: 'Error reaching server.', citations: [], confidence: 'Low', found_in_transcripts: false }
+      }])
     } finally {
       setLoading(false)
     }
@@ -49,8 +85,8 @@ export default function ChatPanel({ meetingId }) {
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div key={i} className={`animate-slide-up ${msg.role === 'user' ? 'flex justify-end' : ''}`}>
+        {messages.map((msg) => (
+          <div key={msg.id} className={`animate-slide-up ${msg.role === 'user' ? 'flex justify-end' : ''}`}>
             {msg.role === 'user'
               ? <div className="bg-ops-gold/10 border border-ops-gold/20 px-4 py-2 max-w-[80%]"><p className="text-ops-text text-sm">{msg.text}</p></div>
               : (
@@ -60,7 +96,7 @@ export default function ChatPanel({ meetingId }) {
                     <div className="space-y-1">
                       <p className="font-mono text-[10px] text-ops-muted tracking-widest">SOURCES</p>
                       {msg.data.citations.map((c, j) => (
-                        <div key={j} className="border-l-2 border-ops-gold/30 pl-3">
+                        <div key={j} className="border border-ops-gold/25 bg-ops-gold/5 glow-citation px-3 py-2">
                           <p className="font-mono text-[10px] text-ops-gold">{c.meeting}{c.speaker ? ` · ${c.speaker}` : ''}</p>
                           <p className="text-ops-muted text-xs italic mt-0.5">{c.excerpt}</p>
                         </div>

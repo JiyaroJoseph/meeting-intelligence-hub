@@ -17,7 +17,15 @@ TRANSCRIPT ({meeting_name}):
 Return ONLY valid JSON (no markdown, no explanation) in this exact format:
 {{
   "decisions": [
-    {{"id": 1, "decision": "Clear description of what was decided", "context": "Brief context/reason", "stakeholders": ["Person A"]}}
+        {{
+            "id": 1,
+            "decision": "Clear description of what was decided",
+            "context": "Brief context/reason",
+            "rationale": "Why the team made this choice",
+            "confidence": "High|Medium|Low",
+            "stakeholders": ["Person A"],
+            "dissenters": ["Person B"]
+        }}
   ],
   "action_items": [
     {{"id": 1, "task": "What needs to be done", "owner": "Person responsible", "deadline": "By when (or 'Not specified')", "priority": "High|Medium|Low"}}
@@ -80,12 +88,13 @@ Return ONLY valid JSON (no markdown) in this exact format:
         print("Raw response:", raw[:500])  # debug snippet
 
         return {
-            "decisions": [],
-            "action_items": [],
-            "brief": {
-                "headline": "Parsing failed",
-                "key_points": [],
-                "risk_flags": [],
-                "overall_outcome": "Neutral"
-            }
+            "classification": "INTERNAL USE ONLY",
+            "mission_name": meeting_name,
+            "headline": "Brief generation unavailable",
+            "situation": "The model response could not be parsed into structured briefing format.",
+            "key_intel": [],
+            "orders": [],
+            "risk_flags": ["Unable to parse briefing response"],
+            "threat_level": "YELLOW",
+            "threat_reason": "Brief parser fallback activated."
         }

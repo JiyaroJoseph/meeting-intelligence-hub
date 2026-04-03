@@ -40,17 +40,13 @@ If the answer is not found in the transcripts, set found_in_transcripts to false
         raw = re.sub(r"```[a-z]*\n?", "", raw).strip().rstrip("```").strip()
     try:
         return json.loads(raw)
-    except Exception as e
+    except Exception as e:
         print("JSON parsing failed:", e)
         print("Raw response:", raw[:500])  # debug snippet
 
         return {
-            "decisions": [],
-            "action_items": [],
-            "brief": {
-                "headline": "Parsing failed",
-                "key_points": [],
-                "risk_flags": [],
-                "overall_outcome": "Neutral"
-            }
+            "answer": "I could not parse the model response cleanly. Please retry with a narrower question.",
+            "citations": [],
+            "confidence": "Low",
+            "found_in_transcripts": False
         }

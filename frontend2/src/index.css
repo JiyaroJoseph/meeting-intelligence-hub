@@ -72,6 +72,25 @@
     animation: pulseSignal 1.4s linear infinite;
   }
 
+  .timeline-row {
+    position: relative;
+  }
+
+  .timeline-row::after {
+    content: '';
+    position: absolute;
+    left: 45px;
+    top: 14px;
+    width: 18px;
+    height: 1px;
+    background: rgba(113, 132, 170, 0.5);
+  }
+
+  .glow-citation {
+    box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.08), 0 0 18px rgba(244, 201, 93, 0.1);
+    animation: citationPulse 2.8s ease-in-out infinite;
+  }
+
   .threat-green {
     color: #56d39b;
     border-color: rgba(86, 211, 155, 0.4);
@@ -108,5 +127,19 @@
 
   100% {
     opacity: 1;
+  }
+}
+
+@keyframes citationPulse {
+  0% {
+    box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.08), 0 0 10px rgba(244, 201, 93, 0.06);
+  }
+
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.2), 0 0 20px rgba(244, 201, 93, 0.15);
+  }
+
+  100% {
+    box-shadow: inset 0 0 0 1px rgba(244, 201, 93, 0.08), 0 0 10px rgba(244, 201, 93, 0.06);
   }
 }

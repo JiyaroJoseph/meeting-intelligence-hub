@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { mockMeetings, mockBrief } from './mockData'
+import { mockMeetings, mockBrief, mockConflicts } from './mockData'
 
 const api = axios.create({ baseURL: '/api' })
 
@@ -32,8 +32,23 @@ export const uploadTranscript = (file, onProgress) => {
 }
 
 export const getBrief = (id) => withMockFallback(() => api.post(`/meetings/${id}/brief`), mockBrief)
+export const getConflicts = (id) => withMockFallback(() => api.get(`/meetings/${id}/conflicts`), { meeting_id: id, conflicts: mockConflicts })
 export const chat = (question, meetingIds = null) =>
-  api.post('/chat', { question, meeting_ids: meetingIds })
+  withMockFallback(
+    () => api.post('/chat', { question, meeting_ids: meetingIds }),
+    {
+      answer: 'Based on uploaded mission files, the API launch was delayed to prioritize mobile redesign and reduce platform risk before rollout.',
+      citations: [
+        {
+          meeting: 'Q1 Product Strategy Review',
+          speaker: 'Sarah Chen',
+          excerpt: 'We should delay API launch until mobile UX and performance bottlenecks are addressed first.',
+        }
+      ],
+      confidence: 'Medium',
+      found_in_transcripts: true,
+    }
+  )
 export const exportCSV = (id) => window.open(`/api/meetings/${id}/export/csv`, '_blank')
 export const exportPDF = (id) => window.open(`/api/meetings/${id}/export/pdf`, '_blank')
 

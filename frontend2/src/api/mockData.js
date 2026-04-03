@@ -10,12 +10,18 @@ export const mockMeetings = [
     status: 'ready',
     action_items_count: 7,
     decisions_count: 4,
+    segments: [
+      { time: '00:00:12.000', speaker: 'Sarah Chen', text: 'Let us prioritize mobile retention because acquisition costs are rising.' },
+      { time: '00:02:03.000', speaker: 'James Wilson', text: 'API latency spikes are hurting enterprise trust; this has to be fixed this quarter.' },
+      { time: '00:05:44.000', speaker: 'Maria Rodriguez', text: 'Given capacity constraints, we should delay advanced analytics until Q3.' },
+      { time: '00:08:21.000', speaker: 'Sarah Chen', text: 'Decision: shift roadmap to mobile-first and resource API performance immediately.' },
+    ],
     intel: {
       decisions: [
-        { id: 1, decision: 'Accelerate mobile-first redesign to Q2', context: 'User retention metrics show 40% usage via mobile', stakeholders: ['Sarah Chen', 'James Wilson'] },
-        { id: 2, decision: 'Allocate 3 engineers to API performance optimization', context: 'Latency increased 200ms YoY; critical path for enterprise clients', stakeholders: ['James Wilson', 'Maria Rodriguez'] },
-        { id: 3, decision: 'Delay advanced analytics dashboard to Q3', context: 'Resource constraints; prioritize core functionality', stakeholders: ['Sarah Chen'] },
-        { id: 4, decision: 'Adopt new UI framework for consistency', context: 'Current stack fragmented across teams', stakeholders: ['Maria Rodriguez', 'Sarah Chen'] },
+        { id: 1, decision: 'Accelerate mobile-first redesign to Q2', context: 'User retention metrics show 40% usage via mobile', rationale: 'Mobile growth outpaced desktop and retention dropped for app users.', confidence: 'High', stakeholders: ['Sarah Chen', 'James Wilson'], dissenters: [] },
+        { id: 2, decision: 'Allocate 3 engineers to API performance optimization', context: 'Latency increased 200ms YoY; critical path for enterprise clients', rationale: 'Slow API response threatens expansion commitments for enterprise contracts.', confidence: 'High', stakeholders: ['James Wilson', 'Maria Rodriguez'], dissenters: [] },
+        { id: 3, decision: 'Delay advanced analytics dashboard to Q3', context: 'Resource constraints; prioritize core functionality', rationale: 'Team capacity is finite and must focus on immediate reliability gaps.', confidence: 'Medium', stakeholders: ['Sarah Chen'], dissenters: ['Maria Rodriguez'] },
+        { id: 4, decision: 'Adopt new UI framework for consistency', context: 'Current stack fragmented across teams', rationale: 'Unified UI stack reduces maintenance load and inconsistent UX patterns.', confidence: 'Medium', stakeholders: ['Maria Rodriguez', 'Sarah Chen'], dissenters: [] },
       ],
       action_items: [
         { id: 1, task: 'Complete mobile UX audit', owner: 'Sarah Chen', deadline: '2025-04-15', priority: 'High' },
@@ -39,11 +45,16 @@ export const mockMeetings = [
     status: 'ready',
     action_items_count: 5,
     decisions_count: 3,
+    segments: [
+      { time: '00:01:10.000', speaker: 'Alex Kumar', text: 'On-call must be formalized before we burn out the same few engineers.' },
+      { time: '00:03:38.000', speaker: 'Sophie Muller', text: 'Security training should be mandatory, especially after the recent incident.' },
+      { time: '00:07:11.000', speaker: 'Jamie Lee', text: 'We should deprecate the legacy payment service this year.' },
+    ],
     intel: {
       decisions: [
-        { id: 1, decision: 'Implement on-call rotation starting May 1st', context: 'Current system unsustainable; burnout risk identified', stakeholders: ['Alex Kumar', 'Jamie Lee'] },
-        { id: 2, decision: 'Mandatory security training for all engineers', context: 'Recent incident revealed gaps in vulnerability awareness', stakeholders: ['Chris Park', 'Sophie Müller'] },
-        { id: 3, decision: 'Deprecate legacy payment service by EOY', context: 'Maintenance burden exceeds benefits; replacement complete', stakeholders: ['Jamie Lee', 'Chris Park'] },
+        { id: 1, decision: 'Implement on-call rotation starting May 1st', context: 'Current system unsustainable; burnout risk identified', rationale: 'Incident volume is increasing and uneven support burden creates reliability risk.', confidence: 'High', stakeholders: ['Alex Kumar', 'Jamie Lee'], dissenters: [] },
+        { id: 2, decision: 'Mandatory security training for all engineers', context: 'Recent incident revealed gaps in vulnerability awareness', rationale: 'Prevent repeat vulnerabilities by standardizing baseline security knowledge.', confidence: 'High', stakeholders: ['Chris Park', 'Sophie Müller'], dissenters: [] },
+        { id: 3, decision: 'Deprecate legacy payment service by EOY', context: 'Maintenance burden exceeds benefits; replacement complete', rationale: 'Legacy surface area creates avoidable defects and slows release cycle.', confidence: 'Medium', stakeholders: ['Jamie Lee', 'Chris Park'], dissenters: [] },
       ],
       action_items: [
         { id: 1, task: 'Design on-call escalation policies', owner: 'Alex Kumar', deadline: '2025-04-20', priority: 'High' },
@@ -65,8 +76,23 @@ export const mockMeetings = [
     status: 'processing',
     action_items_count: 0,
     decisions_count: 0,
+    segments: [
+      { time: null, speaker: 'Nina Thompson', text: 'Client wants tighter SLA commitments before expansion.' },
+      { time: null, speaker: 'Robert Chang', text: 'Budget approval depends on clear risk mitigation plan.' },
+    ],
     intel: null,
   },
+]
+
+export const mockConflicts = [
+  {
+    topic: 'api, launch, delay',
+    severity: 'High',
+    current_meeting: 'Q1 Product Strategy Review',
+    current_decision: 'Delay advanced analytics dashboard to Q3',
+    previous_meeting: 'Engineering All-Hands April',
+    previous_decision: 'Implement on-call rotation starting May 1st and accelerate platform hardening',
+  }
 ]
 
 export const mockBrief = {
