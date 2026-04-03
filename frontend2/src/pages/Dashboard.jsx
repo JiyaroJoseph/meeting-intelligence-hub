@@ -12,7 +12,11 @@ export default function Dashboard() {
   const fetchMeetings = async () => {
     try {
       const res = await getMeetings()
-      setMeetings(res.data)
+      const data = Array.isArray(res)
+        ? res
+        : res?.data || res?.meetings || []
+
+      setMeetings(data)
     } catch (e) {
       setError('Failed to reach backend. Is the server running?')
     } finally {
@@ -26,9 +30,11 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  const totalActions = meetings.reduce((s, m) => s + (m.action_items_count || 0), 0)
-  const totalDecisions = meetings.reduce((s, m) => s + (m.decisions_count || 0), 0)
-  const ready = meetings.filter(m => m.status === 'ready').length
+  const safeMeetings = Array.isArray(meetings) ? meetings : []
+  const totalActions = safeMeetings.reduce((s, m) => s + (m.action_items_count || 0), 0)
+  const totalDecisions = safeMeetings.reduce((s, m) => s + (m.decisions_count || 0), 0)
+  const ready = safeMeetings.filter(m => m.status === 'ready').length
+
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 animate-fade-in">
@@ -40,7 +46,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[
-          { label: 'MISSION FILES', value: meetings.length },
+          { label: 'MISSION FILES', value: safeMeetings.length },
           { label: 'READY', value: ready },
           { label: 'DECISIONS', value: totalDecisions },
           { label: 'ACTION ITEMS', value: totalActions },
@@ -52,7 +58,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {!loading && meetings.length === 0 && (
+      {!loading && safeMeetings.length === 0 && (
         <div className="border border-dashed border-ops-border p-16 text-center">
           <p className="font-mono text-ops-dim text-sm tracking-widest mb-4">NO MISSION FILES LOADED</p>
           <Link to="/upload" className="inline-flex items-center gap-2 bg-ops-gold text-ops-black font-mono text-xs tracking-widest px-6 py-3 hover:bg-ops-gold/80 transition-colors">
@@ -64,7 +70,7 @@ export default function Dashboard() {
       {loading && <div className="flex items-center justify-center py-20"><Spinner size={24} /></div>}
       {error && <div className="border border-ops-red/30 bg-ops-red/5 p-4 text-ops-red font-mono text-xs">▲ {error}</div>}
 
-      {meetings.length > 0 && (
+      {safeMeetings.length > 0 && (
         <div>
           <div className="flex items-center gap-3 mb-4">
             <span className="font-mono text-xs tracking-[4px] text-ops-gold">ACTIVE FILES</span>
@@ -74,7 +80,7 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="space-y-2">
-            {meetings.map(m => (
+            {safeMeetings.map(m => (
               <Link key={m.id} to={`/mission/${m.id}`} className="block relative bg-ops-card border border-ops-border hover:border-ops-gold/40 p-5 transition-all gold-glow group">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">

@@ -33,7 +33,22 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
     raw = message.content[0].text.strip()
     if raw.startswith("```"):
         raw = re.sub(r"```[a-z]*\n?", "", raw).strip().rstrip("```").strip()
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except Exception as e:
+        print("JSON parsing failed:", e)
+        print("Raw response:", raw[:500])  # debug snippet
+
+        return {
+            "decisions": [],
+            "action_items": [],
+            "brief": {
+                "headline": "Parsing failed",
+                "key_points": [],
+                "risk_flags": [],
+                "overall_outcome": "Neutral"
+            }
+        }
 
 def generate_brief(full_text: str, meeting_name: str) -> dict:
     prompt = f"""You are a senior intelligence analyst preparing a classified executive briefing.
@@ -58,4 +73,19 @@ Return ONLY valid JSON (no markdown) in this exact format:
     raw = message.content[0].text.strip()
     if raw.startswith("```"):
         raw = re.sub(r"```[a-z]*\n?", "", raw).strip().rstrip("```").strip()
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except Exception as e:
+        print("JSON parsing failed:", e)
+        print("Raw response:", raw[:500])  # debug snippet
+
+        return {
+            "decisions": [],
+            "action_items": [],
+            "brief": {
+                "headline": "Parsing failed",
+                "key_points": [],
+                "risk_flags": [],
+                "overall_outcome": "Neutral"
+            }
+        }
