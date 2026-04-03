@@ -20,7 +20,7 @@ export default function ChatPanel({ meetingId }) {
     try {
       const res = await chat(q, meetingId ? [meetingId] : null)
       setMessages(prev => [...prev, { role: 'assistant', data: res.data }])
-    } catch (e) {
+    } catch {
       setMessages(prev => [...prev, { role: 'assistant', data: { answer: 'Error reaching server.', citations: [], confidence: 'Low', found_in_transcripts: false } }])
     } finally {
       setLoading(false)

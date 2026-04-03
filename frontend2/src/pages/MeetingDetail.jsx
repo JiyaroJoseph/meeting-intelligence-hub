@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getMeeting, getBrief, exportCSV, exportPDF } from '../api/client'
 import { StatusBadge, PriorityBadge, SectionHeader, Spinner } from '../components/UI'
@@ -14,19 +14,19 @@ export default function MeetingDetail() {
   const [briefLoading, setBriefLoading] = useState(false)
   const [showBrief, setShowBrief] = useState(false)
 
-  const fetchMeeting = async () => {
+  const fetchMeeting = useCallback(async () => {
     try {
       const res = await getMeeting(id)
       setMeeting(res.data)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }
+  }, [id])
 
   useEffect(() => {
     fetchMeeting()
     const interval = setInterval(fetchMeeting, 3000)
     return () => clearInterval(interval)
-  }, [id])
+  }, [fetchMeeting])
 
   const handleBrief = async () => {
     setShowBrief(true)

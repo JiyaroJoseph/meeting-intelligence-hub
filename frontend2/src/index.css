@@ -1,6 +1,112 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: white;
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&family=Orbitron:wght@500;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ops-bg-top: #09122b;
+  --ops-bg-mid: #081637;
+  --ops-bg-bottom: #040915;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    color: #f2f6ff;
+    font-family: 'IBM Plex Sans', sans-serif;
+    background:
+      radial-gradient(circle at 12% 12%, rgba(244, 201, 93, 0.13), transparent 32%),
+      radial-gradient(circle at 88% 4%, rgba(86, 211, 155, 0.07), transparent 28%),
+      linear-gradient(180deg, var(--ops-bg-top) 0%, var(--ops-bg-mid) 42%, var(--ops-bg-bottom) 100%);
+    background-attachment: fixed;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .gold-glow {
+    box-shadow: 0 0 0 1px rgba(244, 201, 93, 0), 0 14px 30px rgba(2, 8, 22, 0.4);
+  }
+
+  .gold-glow:hover {
+    box-shadow: 0 0 0 1px rgba(244, 201, 93, 0.25), 0 16px 36px rgba(2, 8, 22, 0.5);
+  }
+
+  .card-scan::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 10%, rgba(244, 201, 93, 0.08) 50%, transparent 90%);
+    transform: translateX(-125%);
+    pointer-events: none;
+    transition: transform 600ms ease;
+  }
+
+  .card-scan:hover::before {
+    transform: translateX(110%);
+  }
+
+  .status-processing {
+    animation: pulseSignal 1.4s linear infinite;
+  }
+
+  .threat-green {
+    color: #56d39b;
+    border-color: rgba(86, 211, 155, 0.4);
+    background: rgba(86, 211, 155, 0.08);
+  }
+
+  .threat-yellow {
+    color: #ffcc66;
+    border-color: rgba(255, 204, 102, 0.4);
+    background: rgba(255, 204, 102, 0.08);
+  }
+
+  .threat-amber {
+    color: #ffb46a;
+    border-color: rgba(255, 180, 106, 0.4);
+    background: rgba(255, 180, 106, 0.08);
+  }
+
+  .threat-red {
+    color: #ff6f72;
+    border-color: rgba(255, 111, 114, 0.4);
+    background: rgba(255, 111, 114, 0.08);
+  }
+}
+
+@keyframes pulseSignal {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }

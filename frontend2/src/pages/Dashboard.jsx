@@ -17,7 +17,7 @@ export default function Dashboard() {
         : res?.data || res?.meetings || []
 
       setMeetings(data)
-    } catch (e) {
+    } catch {
       setError('Failed to reach backend. Is the server running?')
     } finally {
       setLoading(false)
