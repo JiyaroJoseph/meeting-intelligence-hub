@@ -1,0 +1,25 @@
+Sarah: Thanks everyone. Today we need to decide whether to delay the API launch or ship on schedule.
+James: Current latency is still above target. Enterprise clients reported timeout spikes this week.
+Maya: Marketing is ready for launch, but support tickets may explode if performance is unstable.
+
+Sarah: Decision one. We delay public API launch by three weeks to complete performance hardening.
+James: Agreed. I will lead the optimization sprint and publish daily metrics.
+
+Maya: Action item. I will update the launch campaign timeline and notify partners by Monday.
+Ravi: Action item. I will draft customer-facing messaging that explains the delay without hurting trust.
+
+Sarah: Second decision. Mobile onboarding redesign moves to top priority for Q2.
+Maya: I support that because mobile retention dropped 12 percent month over month.
+James: I partially disagree on timing. If we do both at once, backend quality might suffer.
+
+Ravi: Risk flag. If legal does not approve revised messaging by Wednesday, we miss partner comms.
+Sarah: Action item. Ravi owns legal review follow-up. Deadline Wednesday 3 PM.
+James: Action item. Infra team load test to 50k concurrent users by Friday EOD.
+Maya: Action item. Produce revised roadmap slide for exec sync by Thursday noon.
+
+Sarah: Final decision. Weekly cross-team war room starts next Tuesday at 10 AM.
+James: Noted.
+Maya: Noted.
+Ravi: Noted.
+
+Sarah: Closing summary. We are delaying launch, prioritizing mobile redesign, and running weekly war room reviews until risk level is green.
