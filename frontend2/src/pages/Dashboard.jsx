@@ -17,8 +17,13 @@ export default function Dashboard() {
         : res?.data || res?.meetings || []
 
       setMeetings(data)
-    } catch {
-      setError('Failed to reach backend. Is the server running?')
+      setError(null)
+    } catch (e) {
+      if (e?.code === 'ERR_NETWORK' || e?.response?.status === 0) {
+        setError('Failed to reach backend. Is the server running?')
+      } else {
+        setError(e?.response?.data?.detail || 'Failed to load mission files.')
+      }
     } finally {
       setLoading(false)
     }
