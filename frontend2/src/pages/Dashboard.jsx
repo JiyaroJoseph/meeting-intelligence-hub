@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getMeetings, deleteMeeting, renameMeeting } from '../api/client'
-import { StatusBadge, Spinner } from '../components/UI'
-import { Upload, Pencil, Trash2, Check, X } from 'lucide-react'
+import { StatusBadge, Spinner, Skeleton } from '../components/UI'
+import { Upload, Pencil, Trash2, Check, X, Plus, Search } from 'lucide-react'
 
 export default function Dashboard() {
   const [meetings, setMeetings] = useState([])
@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [editingName, setEditingName] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState(null)
   const [actionError, setActionError] = useState(null)
+  const [query, setQuery] = useState('')
 
   const fetchMeetings = async () => {
     try {
@@ -88,151 +89,152 @@ export default function Dashboard() {
   const totalActions = safeMeetings.reduce((s, m) => s + (m.action_items_count || 0), 0)
   const totalDecisions = safeMeetings.reduce((s, m) => s + (m.decisions_count || 0), 0)
   const ready = safeMeetings.filter(m => m.status === 'ready').length
-
+  const filteredMeetings = safeMeetings.filter(m => {
+    const haystack = `${m.name || ''} ${m.filename || ''} ${m.id || ''}`.toLowerCase()
+    return haystack.includes(query.toLowerCase())
+  })
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10 animate-fade-in">
-      <div className="mb-10">
-        <p className="font-mono text-xs text-ops-gold tracking-[6px] mb-2">OPERATIONS CENTER</p>
-        <h1 className="font-display text-5xl text-ops-text tracking-wider mb-3">MISSION FILES</h1>
-        <p className="text-ops-muted text-sm">Upload meeting transcripts. Extract intelligence. Execute.</p>
+    <div className="mx-auto max-w-7xl px-6 py-10 animate-fade-in">
+      <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-300">Dashboard</p>
+          <h1 className="mt-2 text-4xl font-semibold tracking-tight text-white md:text-5xl">Meetings</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-400">Upload transcripts, review extracted intelligence, and keep decisions moving.</p>
+        </div>
+        <Link to="/upload" className="inline-flex items-center gap-2 self-start rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-100">
+          <Plus size={14} /> New transcript
+        </Link>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
-          { label: 'MISSION FILES', value: safeMeetings.length },
-          { label: 'READY', value: ready },
-          { label: 'DECISIONS', value: totalDecisions },
-          { label: 'ACTION ITEMS', value: totalActions },
+          { label: 'Transcripts', value: safeMeetings.length },
+          { label: 'Ready', value: ready },
+          { label: 'Decisions', value: totalDecisions },
+          { label: 'Tasks', value: totalActions },
         ].map(({ label, value }) => (
-          <div key={label} className="relative bg-ops-card border border-ops-border p-5 card-scan">
-            <p className="font-mono text-[10px] text-ops-muted tracking-widest mb-2">{label}</p>
-            <p className="font-display text-4xl text-ops-gold">{value}</p>
+          <div key={label} className="surface-glow rounded-2xl border border-white/6 bg-white/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 hover:border-indigo-400/20">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">{label}</p>
+            <p className="mt-3 text-4xl font-semibold tracking-tight text-white">{value}</p>
           </div>
         ))}
       </div>
 
       {!loading && safeMeetings.length === 0 && (
-        <div className="border border-dashed border-ops-border p-16 text-center">
-          <p className="font-mono text-ops-dim text-sm tracking-widest mb-4">NO MISSION FILES LOADED</p>
-          <Link to="/upload" className="inline-flex items-center gap-2 bg-ops-gold text-ops-black font-mono text-xs tracking-widest px-6 py-3 hover:bg-ops-gold/80 transition-colors">
-            <Upload size={14} /> UPLOAD TRANSCRIPT
+        <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.04] p-16 text-center">
+          <p className="text-sm font-medium text-slate-200">No transcripts yet</p>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">Upload a meeting transcript to extract decisions, tasks, and a brief summary.</p>
+          <Link to="/upload" className="mt-6 inline-flex items-center gap-2 rounded-full bg-indigo-500 px-6 py-3 text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-indigo-400">
+            <Upload size={14} /> Upload transcript
           </Link>
         </div>
       )}
 
-      {loading && <div className="flex items-center justify-center py-20"><Spinner size={24} /></div>}
-      {error && <div className="border border-ops-red/30 bg-ops-red/5 p-4 text-ops-red font-mono text-xs">▲ {error}</div>}
-      {actionError && <div className="border border-ops-red/30 bg-ops-red/5 p-4 text-ops-red font-mono text-xs mt-2">▲ {actionError}</div>}
+      {loading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="rounded-2xl border border-white/6 bg-white/5 p-5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="mt-3 h-7 w-2/3" />
+              <div className="mt-4 flex gap-3">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-12" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {error && <div className="mt-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error}</div>}
+      {actionError && <div className="mt-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-200">{actionError}</div>}
 
       {safeMeetings.length > 0 && (
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <span className="font-mono text-xs tracking-[4px] text-ops-gold">ACTIVE FILES</span>
-            <div className="flex-1 h-px bg-ops-border" />
-            <Link to="/upload" className="font-mono text-[10px] text-ops-muted hover:text-ops-gold tracking-widest transition-colors flex items-center gap-1">
-              <Upload size={10} /> NEW FILE
-            </Link>
+        <div className="mt-6 overflow-hidden rounded-3xl border border-white/8 bg-slate-950/60 shadow-[0_20px_60px_rgba(2,6,23,0.25)]">
+          <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+            <div>
+              <p className="text-sm font-medium text-white">Recent meetings</p>
+              <p className="mt-1 text-sm text-slate-400">Search, rename, and manage your uploaded transcripts.</p>
+            </div>
+            <div className="relative w-full max-w-sm">
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search transcripts" className="w-full rounded-full border border-white/8 bg-white/5 py-2 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-400/30 focus:bg-white/[0.07]" />
+            </div>
           </div>
-          <div className="space-y-2">
-            {safeMeetings.map(m => (
-              <Link key={m.id} to={`/mission/${m.id}`} className="block relative bg-ops-card border border-ops-border hover:border-ops-gold/40 p-5 transition-all gold-glow group">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="font-mono text-[10px] text-ops-dim tracking-widest">#{m.id}</span>
-                      <StatusBadge status={m.status} />
-                    </div>
-                    {editingId === m.id ? (
-                      <form
-                        onSubmit={(e) => {
+
+          <div className="divide-y divide-white/5">
+            {filteredMeetings.map(m => (
+              <div key={m.id} className="group grid gap-4 px-5 py-5 transition-colors hover:bg-white/[0.03] md:grid-cols-[minmax(0,1fr)_200px]">
+                <Link to={`/mission/${m.id}`} className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StatusBadge status={m.status} />
+                    <span className="text-xs text-slate-500">#{m.id}</span>
+                    <span className="text-xs text-slate-500">{m.filename?.split('.').pop()?.toUpperCase()}</span>
+                  </div>
+                  {editingId === m.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        saveName(m.id)
+                      }}
+                      className="mt-3 flex flex-wrap items-center gap-2"
+                    >
+                      <input
+                        value={editingName}
+                        onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
-                          saveName(m.id)
                         }}
-                        className="flex items-center gap-2"
-                      >
-                        <input
-                          value={editingName}
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                          }}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          className="w-full max-w-md bg-ops-dark border border-ops-border text-ops-text px-2 py-1 text-sm outline-none focus:border-ops-gold"
-                        />
-                        <button
-                          type="submit"
-                          disabled={actionLoadingId === m.id}
-                          className="text-ops-green hover:text-ops-gold disabled:opacity-50"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                          }}
-                          title="Save"
-                        >
-                          <Check size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="text-ops-muted hover:text-ops-red"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            cancelEdit()
-                          }}
-                          title="Cancel"
-                        >
-                          <X size={14} />
-                        </button>
-                      </form>
-                    ) : (
-                      <h3 className="font-display text-xl text-ops-text tracking-wider group-hover:text-ops-gold transition-colors truncate">{m.name}</h3>
-                    )}
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="font-mono text-[10px] text-ops-muted">{m.word_count?.toLocaleString()} WORDS</span>
-                      <span className="font-mono text-[10px] text-ops-muted">{m.speakers?.length} SPEAKERS</span>
-                      <span className="font-mono text-[10px] text-ops-muted">{m.format?.toUpperCase()}</span>
+                        onChange={(e) => setEditingName(e.target.value)}
+                        className="min-w-[240px] flex-1 rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-indigo-400/40"
+                      />
+                      <button type="submit" disabled={actionLoadingId === m.id} className="inline-flex items-center gap-1 rounded-xl bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-400 disabled:opacity-50" onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
+                        <Check size={14} /> Save
+                      </button>
+                      <button type="button" className="inline-flex items-center gap-1 rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-300 transition-colors hover:border-slate-500 hover:text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); cancelEdit() }}>
+                        <X size={14} /> Cancel
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <h3 className="mt-3 truncate text-lg font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-300">{m.name}</h3>
+                      <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-400">
+                        <span>{m.word_count?.toLocaleString()} words</span>
+                        <span>{m.speakers?.length} speakers</span>
+                        <span>{m.format?.toUpperCase()}</span>
+                      </div>
+                    </>
+                  )}
+                </Link>
+
+                <div className="flex items-center justify-between gap-3 md:justify-end">
+                  <div className="flex gap-6 text-right">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Decisions</p>
+                      <p className="mt-1 text-2xl font-semibold text-white">{m.decisions_count}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Tasks</p>
+                      <p className="mt-1 text-2xl font-semibold text-white">{m.action_items_count}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      className="text-ops-muted hover:text-ops-gold transition-colors"
-                      title="Rename"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        startEdit(m)
-                      }}
-                    >
-                      <Pencil size={13} />
+                  <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
+                    <button className="inline-flex items-center justify-center rounded-full border border-white/8 bg-white/5 p-2 text-slate-300 transition-colors hover:border-indigo-400/30 hover:text-white" title="Rename" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startEdit(m) }}>
+                      <Pencil size={14} />
                     </button>
-                    <button
-                      className="text-ops-muted hover:text-ops-red transition-colors disabled:opacity-50"
-                      title="Delete"
-                      disabled={actionLoadingId === m.id}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleDelete(m.id)
-                      }}
-                    >
-                      <Trash2 size={13} />
+                    <button className="inline-flex items-center justify-center rounded-full border border-white/8 bg-white/5 p-2 text-slate-300 transition-colors hover:border-rose-400/30 hover:text-rose-200 disabled:opacity-50" title="Delete" disabled={actionLoadingId === m.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(m.id) }}>
+                      <Trash2 size={14} />
                     </button>
                   </div>
-                  {m.status === 'ready' && (
-                    <div className="flex gap-4 text-right shrink-0">
-                      <div><p className="font-mono text-[10px] text-ops-muted">DECISIONS</p><p className="font-display text-2xl text-ops-gold">{m.decisions_count}</p></div>
-                      <div><p className="font-mono text-[10px] text-ops-muted">ORDERS</p><p className="font-display text-2xl text-ops-gold">{m.action_items_count}</p></div>
-                    </div>
-                  )}
-                  {m.status === 'processing' && (
-                    <div className="flex items-center gap-2 text-ops-yellow"><Spinner size={14} /><span className="font-mono text-[10px] tracking-widest status-processing">ANALYZING...</span></div>
-                  )}
                 </div>
-              </Link>
+              </div>
             ))}
+            {filteredMeetings.length === 0 && !loading && (
+              <div className="px-5 py-10 text-sm text-slate-400">No meetings match your search.</div>
+            )}
           </div>
+
         </div>
       )}
     </div>

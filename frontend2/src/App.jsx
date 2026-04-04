@@ -6,16 +6,16 @@ import MeetingDetail from './pages/MeetingDetail'
 export default function App() {
   const loc = useLocation()
   return (
-    <div className="min-h-screen bg-ops-black text-ops-text font-sans">
-      <nav className="border-b border-ops-border bg-ops-dark/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+    <div className="min-h-screen text-ops-text font-sans">
+      <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/72 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-3">
-            <span className="font-display text-2xl text-ops-gold tracking-widest">DEBRIEF</span>
-            <span className="text-ops-dim text-xs font-mono tracking-widest hidden sm:block">// MEETING INTELLIGENCE</span>
+            <span className="font-semibold tracking-tight text-xl text-white">Debrief</span>
+            <span className="hidden text-xs text-slate-400 sm:block">Meeting intelligence</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link to="/" className={`font-mono text-xs tracking-widest transition-colors ${loc.pathname === '/' ? 'text-ops-gold' : 'text-ops-muted hover:text-ops-text'}`}>OPS CENTER</Link>
-            <Link to="/upload" className={`font-mono text-xs tracking-widest transition-colors ${loc.pathname === '/upload' ? 'text-ops-gold' : 'text-ops-muted hover:text-ops-text'}`}>UPLOAD</Link>
+          <div className="flex items-center gap-2 rounded-full border border-white/5 bg-white/5 p-1">
+            <Link to="/" className={`rounded-full px-4 py-2 text-sm transition-colors ${loc.pathname === '/' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-300 hover:bg-white/5 hover:text-white'}`}>Dashboard</Link>
+            <Link to="/upload" className={`rounded-full px-4 py-2 text-sm transition-colors ${loc.pathname === '/upload' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-300 hover:bg-white/5 hover:text-white'}`}>Upload</Link>
           </div>
         </div>
       </nav>
@@ -24,8 +24,8 @@ export default function App() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/mission/:id" element={<MeetingDetail />} />
       </Routes>
-      <footer className="border-t border-ops-border mt-16 py-4">
-        <p className="text-center font-mono text-[10px] text-ops-dim tracking-widest">DEBRIEF · CLASSIFIED · NOT FOR DISTRIBUTION</p>
+      <footer className="mt-16 border-t border-white/5 py-5">
+        <p className="text-center text-xs text-slate-500">Debrief · Secure meeting intelligence workspace</p>
       </footer>
     </div>
   )

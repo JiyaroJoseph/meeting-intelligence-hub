@@ -1,63 +1,106 @@
 import { ThreatBadge, Spinner } from './UI'
-import { X, Shield } from 'lucide-react'
+import { X, FileText, Sparkles } from 'lucide-react'
 
 export default function BriefCard({ brief, loading, onClose }) {
   if (!brief && !loading) return null
   const intelBullets = (brief?.key_intel?.length ? brief.key_intel : brief?.key_points || []).slice(0, 5)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative bg-ops-dark border border-ops-gold/40 max-w-2xl w-full max-h-[85vh] overflow-y-auto gold-glow">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-ops-border">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xl animate-fade-in">
+      <div className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-white text-slate-900 shadow-[0_30px_80px_rgba(2,6,23,0.45)]">
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
           <div className="flex items-center gap-3">
-            <Shield size={16} className="text-ops-gold" />
-            <span className="font-mono text-xs tracking-[4px] text-ops-gold">EXECUTIVE BRIEF</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600">
+              <FileText size={16} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Executive brief</p>
+              <p className="text-sm text-slate-500">Clean summary of the meeting outcome</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-ops-dim hover:text-ops-text transition-colors"><X size={16} /></button>
+          <button onClick={onClose} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-label="Close brief">
+            <X size={16} />
+          </button>
         </div>
 
         {loading && (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Spinner size={28} />
-            <p className="font-mono text-xs text-ops-muted tracking-widest status-processing">GENERATING BRIEF...</p>
+            <p className="text-sm text-slate-500">Generating brief…</p>
           </div>
         )}
 
         {brief && !loading && (
-          <div className="p-6 space-y-6 animate-slide-up">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] text-ops-dim tracking-widest">{brief.classification}</span>
-              <ThreatBadge level={brief.threat_level} />
+          <div className="grid gap-6 p-6 md:grid-cols-[1.4fr_0.9fr] animate-slide-up">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">{brief.classification}</span>
+                <ThreatBadge level={brief.threat_level} />
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Summary</p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 leading-tight">{brief.headline}</h2>
+              </div>
+
+              {brief.situation && (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Overview</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">{brief.situation}</p>
+                </div>
+              )}
+
+              {brief.threat_reason && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-2 text-indigo-600">
+                    <Sparkles size={14} />
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">Why this rating</p>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">{brief.threat_reason}</p>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="font-mono text-[10px] text-ops-gold tracking-widest mb-2">SITUATION</p>
-              <h2 className="font-display text-2xl text-ops-text tracking-wide leading-tight">{brief.headline}</h2>
+
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              {intelBullets.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Key points</p>
+                  <ul className="mt-3 space-y-2">
+                    {intelBullets.map((item, i) => (
+                      <li key={i} className="flex gap-3 text-sm text-slate-700">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-indigo-500 shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {brief.orders?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Tasks</p>
+                  <ul className="mt-3 space-y-2">
+                    {brief.orders.map((item, i) => (
+                      <li key={i} className="flex gap-3 text-sm text-slate-700">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-cyan-500 shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {brief.risk_flags?.length > 0 && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-600">Risk flags</p>
+                  <ul className="mt-3 space-y-1">
+                    {brief.risk_flags.map((flag, i) => (
+                      <li key={i} className="text-sm text-rose-700">• {flag}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
-            {brief.situation && (
-              <div>
-                <p className="font-mono text-[10px] text-ops-muted tracking-widest mb-2">OVERVIEW</p>
-                <p className="text-ops-text text-sm leading-relaxed">{brief.situation}</p>
-              </div>
-            )}
-            {brief.threat_reason && <div className="border-l-2 border-ops-gold pl-4"><p className="text-ops-muted text-xs italic">{brief.threat_reason}</p></div>}
-            {intelBullets.length > 0 && (
-              <div>
-                <p className="font-mono text-[10px] text-ops-gold tracking-widest mb-3">FIVE-POINT BRIEF</p>
-                <ul className="space-y-2">{intelBullets.map((item, i) => <li key={i} className="flex gap-3 text-sm text-ops-text"><span className="text-ops-gold mt-0.5 shrink-0">◆</span><span>{item}</span></li>)}</ul>
-              </div>
-            )}
-            {brief.orders?.length > 0 && (
-              <div>
-                <p className="font-mono text-[10px] text-ops-gold tracking-widest mb-3">ORDERS</p>
-                <ul className="space-y-2">{brief.orders.map((item, i) => <li key={i} className="flex gap-3 text-sm text-ops-text"><span className="text-ops-yellow mt-0.5 shrink-0">▶</span><span>{item}</span></li>)}</ul>
-              </div>
-            )}
-            {brief.risk_flags?.length > 0 && (
-              <div className="border border-ops-red/30 bg-ops-red/5 p-4">
-                <p className="font-mono text-[10px] text-ops-red tracking-widest mb-3">⚠ RISK FLAGS</p>
-                <ul className="space-y-1">{brief.risk_flags.map((flag, i) => <li key={i} className="text-ops-red text-xs">▲ {flag}</li>)}</ul>
-              </div>
-            )}
           </div>
         )}
       </div>

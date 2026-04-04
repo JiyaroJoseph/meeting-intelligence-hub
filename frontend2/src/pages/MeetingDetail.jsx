@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getMeeting, getBrief, getConflicts, exportCSV, exportPDF, reanalyzeMeeting } from '../api/client'
-import { StatusBadge, PriorityBadge, SectionHeader, Spinner } from '../components/UI'
+import { StatusBadge, PriorityBadge, SectionHeader, Spinner, Skeleton } from '../components/UI'
 import ChatPanel from '../components/ChatPanel'
 import BriefCard from '../components/BriefCard'
-import { ArrowLeft, Download, FileText, Zap, AlertTriangle, Orbit } from 'lucide-react'
+import { ArrowLeft, Download, FileText, Zap, AlertTriangle, Clock3, RefreshCw } from 'lucide-react'
 
 export default function MeetingDetail() {
   const { id } = useParams()
@@ -66,8 +66,8 @@ export default function MeetingDetail() {
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Spinner size={28} /></div>
-  if (!meeting) return <div className="max-w-4xl mx-auto px-6 py-10"><p className="font-mono text-ops-red">Mission file not found.</p></div>
+  if (loading) return <div className="mx-auto flex h-64 max-w-6xl items-center justify-center px-6"><div className="space-y-3 rounded-2xl border border-white/8 bg-white/5 p-6"><Skeleton className="h-5 w-32" /><Skeleton className="h-4 w-56" /><Skeleton className="h-4 w-44" /></div></div>
+  if (!meeting) return <div className="mx-auto max-w-4xl px-6 py-10"><p className="text-sm text-rose-300">Meeting not found.</p></div>
 
   const decisions = meeting.intel?.decisions || []
   const actions = meeting.intel?.action_items || []
@@ -82,107 +82,121 @@ export default function MeetingDetail() {
   const timelineSpeakers = [...new Set(timeline.map(t => t.speaker || 'Unknown'))]
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-in">
-      <Link to="/" className="inline-flex items-center gap-2 font-mono text-xs text-ops-muted hover:text-ops-gold tracking-widest mb-8 transition-colors">
-        <ArrowLeft size={12} /> OPS CENTER
+    <div className="mx-auto max-w-6xl px-6 py-10 animate-fade-in">
+      <Link to="/" className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white">
+        <ArrowLeft size={14} /> Back to dashboard
       </Link>
 
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-8">
+      <div className="mt-6 flex flex-col gap-6 rounded-3xl border border-white/8 bg-white/5 p-6 shadow-[0_20px_60px_rgba(2,6,23,0.25)] md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="font-mono text-[10px] text-ops-dim tracking-widest">MISSION #{meeting.id}</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Meeting #{meeting.id}</span>
             <StatusBadge status={meeting.status} />
-            {conflicts.length > 0 && <span className="font-mono text-[10px] text-ops-red border border-ops-red/30 bg-ops-red/10 px-2 py-0.5 tracking-widest">CONFLICTS DETECTED</span>}
+            {conflicts.length > 0 && <span className="rounded-full border border-rose-400/20 bg-rose-500/10 px-2.5 py-1 text-[11px] font-medium text-rose-200">Conflicts detected</span>}
           </div>
-          <h1 className="font-display text-4xl text-ops-text tracking-wider mb-2">{meeting.name}</h1>
-          <div className="flex flex-wrap gap-4">
-            <span className="font-mono text-xs text-ops-muted">{meeting.word_count?.toLocaleString()} WORDS</span>
-            <span className="font-mono text-xs text-ops-muted">{meeting.speakers?.join(', ') || 'UNKNOWN'}</span>
-            <span className="font-mono text-xs text-ops-muted">{meeting.format?.toUpperCase()}</span>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white">{meeting.name}</h1>
+          <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-400">
+            <span>{meeting.word_count?.toLocaleString()} words</span>
+            <span>{meeting.speakers?.join(', ') || 'Unknown speakers'}</span>
+            <span className="uppercase tracking-[0.16em] text-slate-500">{meeting.format?.toUpperCase()}</span>
           </div>
         </div>
 
         {meeting.status === 'ready' && (
           <div className="flex flex-wrap gap-2 shrink-0">
-            <button onClick={handleBrief} className="flex items-center gap-2 bg-ops-gold text-ops-black font-mono text-xs tracking-widest px-4 py-2.5 hover:bg-ops-gold/80 transition-colors">
-              <Zap size={12} /> BRIEF ME
+            <button onClick={handleBrief} className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white transition-all hover:-translate-y-0.5 hover:bg-indigo-400">
+              <Zap size={12} /> Brief me
             </button>
-            <button onClick={() => exportCSV(id)} className="flex items-center gap-2 border border-ops-border text-ops-muted font-mono text-xs tracking-widest px-4 py-2.5 hover:border-ops-gold/40 hover:text-ops-text transition-colors">
+            <button onClick={() => exportCSV(id)} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-colors hover:border-indigo-400/25 hover:text-white">
               <Download size={12} /> CSV
             </button>
-            <button onClick={() => exportPDF(id)} className="flex items-center gap-2 border border-ops-border text-ops-muted font-mono text-xs tracking-widest px-4 py-2.5 hover:border-ops-gold/40 hover:text-ops-text transition-colors">
-              <FileText size={12} /> DOSSIER PDF
+            <button onClick={() => exportPDF(id)} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-colors hover:border-indigo-400/25 hover:text-white">
+              <FileText size={12} /> PDF
             </button>
           </div>
         )}
       </div>
 
       {meeting.status === 'processing' && (
-        <div className="flex items-center gap-4 border border-ops-yellow/30 bg-ops-yellow/5 p-5 mb-8">
+        <div className="mt-6 flex items-center gap-4 rounded-2xl border border-indigo-400/15 bg-indigo-500/10 p-5">
           <Spinner size={20} />
           <div>
-            <p className="font-mono text-xs text-ops-yellow tracking-widest">ANALYZING TRANSCRIPT</p>
-            <p className="text-ops-muted text-xs mt-1">Claude is extracting intelligence. This takes 15–30 seconds.</p>
+            <p className="text-sm font-medium text-indigo-100">Analyzing transcript</p>
+            <p className="mt-1 text-sm text-slate-400">This usually takes 15 to 30 seconds.</p>
           </div>
         </div>
       )}
 
       {meeting.status === 'error' && (
-        <div className="border border-ops-red/30 bg-ops-red/5 p-5 mb-8">
-          <p className="font-mono text-xs text-ops-red tracking-widest mb-2">ANALYSIS FAILED</p>
-          <p className="text-ops-muted text-xs mb-4">{meeting.error_message || 'The transcript could not be processed.'}</p>
+        <div className="mt-6 rounded-2xl border border-rose-400/15 bg-rose-500/10 p-5">
+          <p className="text-sm font-medium text-rose-200">Analysis failed</p>
+          <p className="mt-2 text-sm text-slate-300">{meeting.error_message || 'The transcript could not be processed.'}</p>
           <div className="flex items-center gap-3">
             <button
               onClick={handleRetryAnalysis}
               disabled={retrying}
-              className="bg-ops-gold text-ops-black font-mono text-xs tracking-widest px-4 py-2.5 hover:bg-ops-gold/80 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition-colors hover:bg-slate-100 disabled:opacity-50"
             >
-              {retrying ? 'RETRYING...' : 'RETRY ANALYSIS'}
+              {retrying ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />} {retrying ? 'Retrying...' : 'Retry analysis'}
             </button>
-            {retryError && <span className="font-mono text-[10px] text-ops-red">{retryError}</span>}
+            {retryError && <span className="text-xs text-rose-300">{retryError}</span>}
           </div>
         </div>
       )}
 
       {meeting.status === 'ready' && (
-        <div className="space-y-10">
-          {/* DECISIONS */}
+        <div className="mt-8 space-y-8">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/8 bg-white/5 p-5">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Decisions</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{decisions.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/5 p-5">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Tasks</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{actions.length}</p>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/5 p-5">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Conflict checks</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{conflicts.length}</p>
+            </div>
+          </div>
+
           <div>
-            <SectionHeader label="DECISION DNA" count={decisions.length} />
+            <SectionHeader label="Key decisions" count={decisions.length} />
             {decisions.length === 0
-              ? <p className="font-mono text-xs text-ops-dim">No decisions extracted.</p>
+              ? <p className="text-sm text-slate-400">No decisions extracted.</p>
               : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {decisions.map(d => (
-                    <div key={d.id} className="bg-ops-card border border-ops-border p-4 gold-glow">
+                    <div key={d.id} className="rounded-2xl border border-white/8 bg-white/5 p-5 transition-colors hover:border-indigo-400/20">
                       <div className="flex items-start gap-3">
-                        <span className="font-mono text-[10px] text-ops-gold border border-ops-gold/30 px-2 py-0.5 shrink-0">#{d.id}</span>
+                        <span className="inline-flex shrink-0 items-center rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[11px] font-medium text-indigo-200">#{d.id}</span>
                         <div className="flex-1">
-                          <p className="text-ops-text text-sm font-medium mb-1">{d.decision}</p>
-                          {d.context && <p className="text-ops-muted text-xs mb-2">{d.context}</p>}
+                          <p className="text-sm font-medium text-white">{d.decision}</p>
+                          {d.context && <p className="mt-1 text-sm text-slate-400">{d.context}</p>}
                           {d.rationale && (
-                            <div className="mb-2 border-l-2 border-ops-gold/50 pl-3">
-                              <p className="font-mono text-[10px] text-ops-gold tracking-widest mb-1">RATIONALE</p>
-                              <p className="text-ops-muted text-xs">{d.rationale}</p>
+                            <div className="mb-2 border-l-2 border-indigo-400/40 pl-3">
+                              <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Rationale</p>
+                              <p className="text-sm text-slate-300">{d.rationale}</p>
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2 mb-2">
-                            <span className={`font-mono text-[10px] px-2 py-0.5 border ${d.confidence === 'High' ? 'text-ops-green border-ops-green/30 bg-ops-green/10' : d.confidence === 'Low' ? 'text-ops-red border-ops-red/30 bg-ops-red/10' : 'text-ops-yellow border-ops-yellow/30 bg-ops-yellow/10'}`}>
-                              CONFIDENCE {d.confidence || 'MEDIUM'}
+                            <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${d.confidence === 'High' ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300' : d.confidence === 'Low' ? 'border-rose-400/30 bg-rose-500/10 text-rose-300' : 'border-amber-400/30 bg-amber-500/10 text-amber-300'}`}>
+                              Confidence {d.confidence || 'Medium'}
                             </span>
-                            {d.dissenters?.length > 0 && <span className="font-mono text-[10px] px-2 py-0.5 border border-ops-red/30 text-ops-red">DISSENT {d.dissenters.length}</span>}
+                            {d.dissenters?.length > 0 && <span className="rounded-full border border-rose-400/30 bg-rose-500/10 px-2.5 py-1 text-[11px] font-medium text-rose-300">Dissent {d.dissenters.length}</span>}
                           </div>
                           {d.stakeholders?.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {d.stakeholders.map(s => (
-                                <span key={s} className="font-mono text-[10px] border border-ops-border text-ops-muted px-2 py-0.5">{s}</span>
+                                <span key={s} className="rounded-full border border-white/8 bg-slate-900/60 px-2.5 py-1 text-[11px] text-slate-300">{s}</span>
                               ))}
                             </div>
                           )}
                           {d.dissenters?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {d.dissenters.map(s => (
-                                <span key={s} className="font-mono text-[10px] border border-ops-red/30 text-ops-red px-2 py-0.5">{s}</span>
+                                <span key={s} className="rounded-full border border-rose-400/30 px-2.5 py-1 text-[11px] text-rose-300">{s}</span>
                               ))}
                             </div>
                           )}
@@ -197,19 +211,19 @@ export default function MeetingDetail() {
 
           {/* CONFLICT DETECTOR */}
           <div>
-            <SectionHeader icon={<AlertTriangle size={14} />} label="CROSS-MEETING CONFLICT DETECTOR" count={conflicts.length} />
+            <SectionHeader icon={<AlertTriangle size={14} />} label="Cross-meeting conflict detector" count={conflicts.length} />
             {conflicts.length === 0
-              ? <p className="font-mono text-xs text-ops-dim">No contradictions detected against previous mission files.</p>
+              ? <p className="text-sm text-slate-400">No contradictions detected against previous meetings.</p>
               : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {conflicts.map((c, i) => (
-                    <div key={`${c.topic}-${i}`} className="border border-ops-red/30 bg-ops-red/5 p-4">
+                    <div key={`${c.topic}-${i}`} className="rounded-2xl border border-rose-400/15 bg-rose-500/10 p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle size={13} className="text-ops-red" />
-                        <p className="font-mono text-[10px] text-ops-red tracking-widest">{c.severity || 'MEDIUM'} CONFLICT · {c.topic?.toUpperCase() || 'DECISION DRIFT'}</p>
+                        <AlertTriangle size={13} className="text-rose-300" />
+                        <p className="text-xs font-medium uppercase tracking-[0.18em] text-rose-200">{c.severity || 'Medium'} conflict · {c.topic?.toUpperCase() || 'Decision drift'}</p>
                       </div>
-                      <p className="text-xs text-ops-muted mb-1"><span className="text-ops-text">Current:</span> {c.current_decision}</p>
-                      <p className="text-xs text-ops-muted"><span className="text-ops-text">Previous ({c.previous_meeting}):</span> {c.previous_decision}</p>
+                      <p className="text-sm text-slate-300 mb-1"><span className="text-slate-100">Current:</span> {c.current_decision}</p>
+                      <p className="text-sm text-slate-300"><span className="text-slate-100">Previous ({c.previous_meeting}):</span> {c.previous_decision}</p>
                     </div>
                   ))}
                 </div>
@@ -218,52 +232,52 @@ export default function MeetingDetail() {
 
           {/* TIMELINE REPLAY */}
           <div>
-            <SectionHeader icon={<Orbit size={14} />} label="TIMELINE REPLAY" count={timeline.length} />
-            <div className="border border-ops-border bg-ops-card/60 p-4">
+            <SectionHeader icon={<Clock3 size={14} />} label="Timeline replay" count={timeline.length} />
+            <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
               <div className="flex flex-wrap gap-2 mb-4">
                 {timelineSpeakers.map(sp => (
-                  <span key={sp} className="font-mono text-[10px] border border-ops-border text-ops-muted px-2 py-0.5">{sp}</span>
+                  <span key={sp} className="rounded-full border border-white/8 bg-slate-900/60 px-2.5 py-1 text-[11px] text-slate-300">{sp}</span>
                 ))}
               </div>
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {timeline.map(item => (
                   <div key={item.idx} className="grid grid-cols-[92px_120px_1fr] gap-3 items-start timeline-row">
-                    <span className="font-mono text-[10px] text-ops-dim">{item.time || `SEG ${item.idx + 1}`}</span>
-                    <span className="font-mono text-[10px] text-ops-gold">{item.speaker || 'Unknown'}</span>
-                    <div className="relative border border-ops-border/70 bg-ops-dark/70 px-3 py-2">
-                      <span className={`absolute left-0 top-0 h-full w-1 ${item.tag.includes('risk') ? 'bg-ops-red' : item.tag.includes('decision') ? 'bg-ops-gold' : item.tag.includes('action') ? 'bg-ops-yellow' : 'bg-ops-border'}`} />
-                      <p className="text-xs text-ops-muted pl-2">{item.text}</p>
+                    <span className="text-xs text-slate-500">{item.time || `Segment ${item.idx + 1}`}</span>
+                    <span className="text-xs font-medium text-indigo-300">{item.speaker || 'Unknown'}</span>
+                    <div className="relative rounded-xl border border-white/8 bg-slate-950/60 px-3 py-2">
+                      <span className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${item.tag.includes('risk') ? 'bg-rose-400' : item.tag.includes('decision') ? 'bg-indigo-400' : item.tag.includes('action') ? 'bg-cyan-400' : 'bg-slate-700'}`} />
+                      <p className="pl-2 text-sm text-slate-300">{item.text}</p>
                     </div>
                   </div>
                 ))}
-                {timeline.length === 0 && <p className="font-mono text-xs text-ops-dim">No timeline segments available for this transcript.</p>}
+                {timeline.length === 0 && <p className="text-sm text-slate-400">No timeline segments available for this transcript.</p>}
               </div>
             </div>
           </div>
 
           {/* ACTION ITEMS */}
           <div>
-            <SectionHeader label="ORDERS — ACTION ITEMS" count={actions.length} />
+            <SectionHeader label="Tasks" count={actions.length} />
             {actions.length === 0
-              ? <p className="font-mono text-xs text-ops-dim">No action items extracted.</p>
+              ? <p className="text-sm text-slate-400">No tasks extracted.</p>
               : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-2xl border border-white/8 bg-white/5">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-ops-border">
+                      <tr className="border-b border-white/8">
                         {['#', 'TASK', 'OWNER', 'DEADLINE', 'PRIORITY'].map(h => (
-                          <th key={h} className="text-left font-mono text-[10px] text-ops-muted tracking-widest py-2 pr-4">{h}</th>
+                          <th key={h} className="px-4 py-3 text-left text-xs font-medium tracking-[0.18em] text-slate-400">{h === 'TASK' ? 'Task' : h === 'OWNER' ? 'Owner' : h === 'DEADLINE' ? 'Deadline' : h === 'PRIORITY' ? 'Priority' : h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {actions.map(a => (
-                        <tr key={a.id} className="border-b border-ops-border/50 hover:bg-ops-card transition-colors">
-                          <td className="py-3 pr-4 font-mono text-[10px] text-ops-gold">#{a.id}</td>
-                          <td className="py-3 pr-4 text-ops-text text-sm">{a.task}</td>
-                          <td className="py-3 pr-4 font-mono text-xs text-ops-muted">{a.owner}</td>
-                          <td className="py-3 pr-4 font-mono text-xs text-ops-muted">{a.deadline}</td>
-                          <td className="py-3"><PriorityBadge priority={a.priority} /></td>
+                        <tr key={a.id} className="border-b border-white/5 transition-colors hover:bg-white/[0.03]">
+                          <td className="px-4 py-4 text-sm text-indigo-300">#{a.id}</td>
+                          <td className="px-4 py-4 text-sm text-white">{a.task}</td>
+                          <td className="px-4 py-4 text-sm text-slate-400">{a.owner}</td>
+                          <td className="px-4 py-4 text-sm text-slate-400">{a.deadline}</td>
+                          <td className="px-4 py-4"><PriorityBadge priority={a.priority} /></td>
                         </tr>
                       ))}
                     </tbody>
@@ -275,7 +289,7 @@ export default function MeetingDetail() {
 
           {/* CHAT */}
           <div>
-            <SectionHeader label="CONTEXTUAL QUERY" />
+            <SectionHeader label="Contextual query" />
             <ChatPanel meetingId={id} />
           </div>
         </div>
