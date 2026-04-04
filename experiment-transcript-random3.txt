@@ -1,0 +1,53 @@
+Dr. Mehta: Let’s begin. Patient wait times in OPD have increased significantly this week.
+
+Nurse Anjali: Yes, average wait time is now over 90 minutes during peak hours.
+
+Dr. Mehta: That’s unacceptable. Any idea why?
+
+Anjali: We’re short-staffed in the morning shift, and registration is slow.
+
+Ravi: Also, two doctors were on leave this week.
+
+Dr. Mehta: Alright, we need to act on this.
+
+Anjali: We could add one more nurse to the morning shift.
+
+Ravi: And maybe extend consultation hours by an hour?
+
+Dr. Mehta: That seems reasonable. Let’s do both for now.
+
+---
+
+Dr. Mehta: Next issue—medicine stock.
+
+Ravi: We are running low on insulin and antibiotics.
+
+Anjali: Some patients were already asked to buy from outside.
+
+Dr. Mehta: That should not happen.
+
+Ravi: Supplier delayed delivery by three days.
+
+Dr. Mehta: That’s a risk. We need backup suppliers.
+
+---
+
+Anjali: I’ll coordinate with HR to adjust shift schedules by tomorrow.
+
+Ravi: I will contact alternative suppliers and confirm availability by Wednesday.
+
+---
+
+Dr. Mehta: Another concern—patient complaints have increased.
+
+Anjali: Mostly about long wait times and lack of communication.
+
+Dr. Mehta: We need better front-desk coordination.
+
+Ravi: Maybe assign one person just for patient updates?
+
+Dr. Mehta: Yes, let’s try that.
+
+---
+
+Dr. Mehta: Summary—reduce wait time by adding staff and extending hours, fix medicine shortages, and improve patient communication.
