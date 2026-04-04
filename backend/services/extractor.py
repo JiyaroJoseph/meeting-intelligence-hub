@@ -33,6 +33,16 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
     decision_tokens = ("decid", "agree", "approve", "launch", "ship", "delay", "defer", "postpone", "reject", "cancel", "go with", "move forward")
     action_tokens = ("will", "action", "owner", "deadline", "next step", "follow up", "by ", "todo", "task")
 
+    def decision_confidence(text: str) -> str:
+        t = (text or "").lower()
+        if any(k in t for k in ["final decision", "we decided", "decision.", "approved", "agreed", "delay", "launch"]):
+            return "High"
+        if any(k in t for k in ["might", "maybe", "could", "should", "consider"]):
+            return "Low"
+        if len((text or "").split()) < 4:
+            return "Low"
+        return "Medium"
+
     decisions = []
     for item in sentences:
         s = item["text"]
@@ -47,9 +57,9 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
                 {
                     "id": len(decisions) + 1,
                     "decision": s[:220],
-                    "context": "Extracted using local transcript analysis.",
-                    "rationale": "Inferred from transcript language indicating a decision or direction.",
-                    "confidence": "Medium",
+                    "context": "",
+                    "rationale": "",
+                    "confidence": decision_confidence(s),
                     "stakeholders": stakeholders,
                     "dissenters": [],
                 }
@@ -64,6 +74,8 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
         low = s.lower()
         if any(t in low for t in action_tokens):
             cleaned_task = re.sub(r"^(?:Action item\.|Action item:?)\s*", "", s, flags=re.I).strip()
+            if not cleaned_task:
+                continue
             owner = speaker or "Unassigned"
             if owner == "Unknown":
                 owner = "Unassigned"
@@ -90,8 +102,8 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
             {
                 "id": 1,
                 "decision": sentences[0]["text"][:220],
-                "context": "Extracted using local transcript analysis.",
-                "rationale": "No explicit decision markers found; the first meaningful statement was used.",
+                "context": "",
+                "rationale": "",
                 "confidence": "Low",
                 "stakeholders": [first_speaker] if first_speaker else [],
                 "dissenters": [],

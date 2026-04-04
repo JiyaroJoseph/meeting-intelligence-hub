@@ -93,7 +93,7 @@ export default function MeetingDetail() {
   }
 
   const decisions = meeting.intel?.decisions || []
-  const actions = meeting.intel?.action_items || []
+  const actions = (meeting.intel?.action_items || []).filter((a) => (a?.task || '').trim().length > 0)
   const timeline = (meeting.segments || []).slice(0, 22).map((seg, idx) => {
     const text = (seg.text || '').toLowerCase()
     let tag = 'dialogue'
@@ -106,8 +106,16 @@ export default function MeetingDetail() {
 
   const normalizeDecisionContext = (text) => {
     if (!text) return ''
-    if (/fallback|unavailable model output|fallback extraction path/i.test(text)) {
-      return 'Extracted using local transcript analysis.'
+    if (/fallback|unavailable model output|fallback extraction path|extracted using local transcript analysis/i.test(text)) {
+      return ''
+    }
+    return text
+  }
+
+  const normalizeDecisionRationale = (text) => {
+    if (!text) return ''
+    if (/inferred from transcript language indicating a decision or direction/i.test(text)) {
+      return ''
     }
     return text
   }
@@ -216,11 +224,11 @@ export default function MeetingDetail() {
                           <span className="inline-flex shrink-0 items-center rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[11px] font-medium text-indigo-200">#{d.id}</span>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-white">{d.decision}</p>
-                            {d.context && <p className="mt-1 text-sm text-slate-400">{normalizeDecisionContext(d.context)}</p>}
-                            {d.rationale && (
+                            {normalizeDecisionContext(d.context) && <p className="mt-1 text-sm text-slate-400">{normalizeDecisionContext(d.context)}</p>}
+                            {normalizeDecisionRationale(d.rationale) && (
                               <div className="mb-2 border-l-2 border-indigo-400/40 pl-3">
                                 <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Rationale</p>
-                                <p className="text-sm text-slate-300">{normalizeDecisionContext(d.rationale)}</p>
+                                <p className="text-sm text-slate-300">{normalizeDecisionRationale(d.rationale)}</p>
                               </div>
                             )}
                             <div className="mb-2 flex flex-wrap gap-2">
