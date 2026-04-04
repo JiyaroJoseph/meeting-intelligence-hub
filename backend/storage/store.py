@@ -45,3 +45,9 @@ def set_status(meeting_id: str, status: str, error_message: Optional[str] = None
 
 def delete_meeting(meeting_id: str):
     meetings.pop(meeting_id, None)
+
+def rename_meeting(meeting_id: str, name: str) -> Optional[dict]:
+    if meeting_id not in meetings:
+        return None
+    meetings[meeting_id]["name"] = name
+    return meetings[meeting_id]

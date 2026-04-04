@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getMeetings } from '../api/client'
+import { getMeetings, deleteMeeting, renameMeeting } from '../api/client'
 import { StatusBadge, Spinner } from '../components/UI'
-import { Upload } from 'lucide-react'
+import { Upload, Pencil, Trash2, Check, X } from 'lucide-react'
 
 export default function Dashboard() {
   const [meetings, setMeetings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [editingName, setEditingName] = useState('')
+  const [actionLoadingId, setActionLoadingId] = useState(null)
+  const [actionError, setActionError] = useState(null)
 
   const fetchMeetings = async () => {
     try {
@@ -34,6 +38,51 @@ export default function Dashboard() {
     const interval = setInterval(fetchMeetings, 4000)
     return () => clearInterval(interval)
   }, [])
+
+  const startEdit = (meeting) => {
+    setActionError(null)
+    setEditingId(meeting.id)
+    setEditingName(meeting.name || '')
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditingName('')
+  }
+
+  const saveName = async (meetingId) => {
+    const nextName = editingName.trim()
+    if (!nextName) {
+      setActionError('Name cannot be empty.')
+      return
+    }
+    try {
+      setActionLoadingId(meetingId)
+      await renameMeeting(meetingId, nextName)
+      setMeetings(prev => prev.map(m => (m.id === meetingId ? { ...m, name: nextName } : m)))
+      cancelEdit()
+    } catch (e) {
+      setActionError(e?.response?.data?.detail || 'Failed to rename file.')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  const handleDelete = async (meetingId) => {
+    try {
+      setActionLoadingId(meetingId)
+      setActionError(null)
+      await deleteMeeting(meetingId)
+      setMeetings(prev => prev.filter(m => m.id !== meetingId))
+      if (editingId === meetingId) {
+        cancelEdit()
+      }
+    } catch (e) {
+      setActionError(e?.response?.data?.detail || 'Failed to delete file.')
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
 
   const safeMeetings = Array.isArray(meetings) ? meetings : []
   const totalActions = safeMeetings.reduce((s, m) => s + (m.action_items_count || 0), 0)
@@ -74,6 +123,7 @@ export default function Dashboard() {
 
       {loading && <div className="flex items-center justify-center py-20"><Spinner size={24} /></div>}
       {error && <div className="border border-ops-red/30 bg-ops-red/5 p-4 text-ops-red font-mono text-xs">▲ {error}</div>}
+      {actionError && <div className="border border-ops-red/30 bg-ops-red/5 p-4 text-ops-red font-mono text-xs mt-2">▲ {actionError}</div>}
 
       {safeMeetings.length > 0 && (
         <div>
@@ -93,12 +143,82 @@ export default function Dashboard() {
                       <span className="font-mono text-[10px] text-ops-dim tracking-widest">#{m.id}</span>
                       <StatusBadge status={m.status} />
                     </div>
-                    <h3 className="font-display text-xl text-ops-text tracking-wider group-hover:text-ops-gold transition-colors truncate">{m.name}</h3>
+                    {editingId === m.id ? (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          saveName(m.id)
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <input
+                          value={editingName}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                          }}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          className="w-full max-w-md bg-ops-dark border border-ops-border text-ops-text px-2 py-1 text-sm outline-none focus:border-ops-gold"
+                        />
+                        <button
+                          type="submit"
+                          disabled={actionLoadingId === m.id}
+                          className="text-ops-green hover:text-ops-gold disabled:opacity-50"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                          }}
+                          title="Save"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="text-ops-muted hover:text-ops-red"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            cancelEdit()
+                          }}
+                          title="Cancel"
+                        >
+                          <X size={14} />
+                        </button>
+                      </form>
+                    ) : (
+                      <h3 className="font-display text-xl text-ops-text tracking-wider group-hover:text-ops-gold transition-colors truncate">{m.name}</h3>
+                    )}
                     <div className="flex items-center gap-4 mt-2">
                       <span className="font-mono text-[10px] text-ops-muted">{m.word_count?.toLocaleString()} WORDS</span>
                       <span className="font-mono text-[10px] text-ops-muted">{m.speakers?.length} SPEAKERS</span>
                       <span className="font-mono text-[10px] text-ops-muted">{m.format?.toUpperCase()}</span>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      className="text-ops-muted hover:text-ops-gold transition-colors"
+                      title="Rename"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        startEdit(m)
+                      }}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      className="text-ops-muted hover:text-ops-red transition-colors disabled:opacity-50"
+                      title="Delete"
+                      disabled={actionLoadingId === m.id}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleDelete(m.id)
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                   {m.status === 'ready' && (
                     <div className="flex gap-4 text-right shrink-0">

@@ -13,7 +13,7 @@ from services.parser import parse_transcript
 from services.extractor import extract_intel, generate_brief
 from services.chatbot import query_transcripts
 from services.pdf_export import generate_dossier
-from storage.store import create_meeting, get_meeting, get_all_meetings, update_intel, set_status, delete_meeting
+from storage.store import create_meeting, get_meeting, get_all_meetings, update_intel, set_status, delete_meeting, rename_meeting
 
 app = FastAPI(title="DEBRIEF API")
 
@@ -24,6 +24,9 @@ ALLOWED_EXTENSIONS = {".txt", ".vtt"}
 class ChatRequest(BaseModel):
     question: str
     meeting_ids: Optional[List[str]] = None
+
+class RenameMeetingRequest(BaseModel):
+    name: str
 
 def _tokenize(text: str) -> set:
     words = re.findall(r"[a-zA-Z]{4,}", (text or "").lower())
@@ -142,6 +145,18 @@ def remove_meeting(meeting_id: str):
         raise HTTPException(status_code=404, detail="Mission file not found.")
     delete_meeting(meeting_id)
     return {"deleted": meeting_id}
+
+@app.patch("/api/meetings/{meeting_id}")
+def rename_meeting_api(meeting_id: str, req: RenameMeetingRequest):
+    new_name = (req.name or "").strip()
+    if len(new_name) < 2:
+        raise HTTPException(status_code=400, detail="Name must be at least 2 characters.")
+    if len(new_name) > 120:
+        raise HTTPException(status_code=400, detail="Name too long. Max 120 characters.")
+    meeting = rename_meeting(meeting_id, new_name)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Mission file not found.")
+    return {"id": meeting["id"], "name": meeting["name"]}
 
 @app.post("/api/meetings/{meeting_id}/brief")
 def get_brief(meeting_id: str):
