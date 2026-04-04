@@ -27,15 +27,22 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
         if speaker:
             speakers.add(speaker)
         if text:
-            sentences.extend([s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()])
+            for s in [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]:
+                sentences.append({"speaker": speaker, "text": s})
 
     decision_tokens = ("decid", "agree", "approve", "launch", "ship", "delay", "defer", "postpone", "reject", "cancel", "go with", "move forward")
     action_tokens = ("will", "action", "owner", "deadline", "next step", "follow up", "by ", "todo", "task")
 
     decisions = []
-    for s in sentences:
+    for item in sentences:
+        s = item["text"]
+        speaker = item.get("speaker")
         low = s.lower()
         if any(t in low for t in decision_tokens):
+            mentioned = [sp for sp in sorted(list(speakers)) if re.search(rf"\b{re.escape(sp)}\b", s, flags=re.I)]
+            stakeholders = mentioned[:4]
+            if not stakeholders and speaker:
+                stakeholders = [speaker]
             decisions.append(
                 {
                     "id": len(decisions) + 1,
@@ -43,7 +50,7 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
                     "context": "Extracted using local transcript analysis.",
                     "rationale": "Inferred from transcript language indicating a decision or direction.",
                     "confidence": "Medium",
-                    "stakeholders": sorted(list(speakers))[:4],
+                    "stakeholders": stakeholders,
                     "dissenters": [],
                 }
             )
@@ -51,17 +58,24 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
             break
 
     action_items = []
-    for s in sentences:
+    for item in sentences:
+        s = item["text"]
+        speaker = item.get("speaker")
         low = s.lower()
         if any(t in low for t in action_tokens):
-            owner = "Unassigned"
-            m = re.match(r"^([A-Za-z][A-Za-z\s]{0,30})\s+(?:will|to)\s+", s)
+            cleaned_task = re.sub(r"^(?:Action item\.|Action item:?)\s*", "", s, flags=re.I).strip()
+            owner = speaker or "Unassigned"
+            if owner == "Unknown":
+                owner = "Unassigned"
+            m = re.search(r"\b([A-Za-z][A-Za-z\s]{0,30})\s+owns?\b", s)
             if m:
                 owner = m.group(1).strip()
+            elif re.match(r"^I\s+(?:will|own|owns|am|’m|m)\b", cleaned_task, flags=re.I) and speaker:
+                owner = speaker
             action_items.append(
                 {
                     "id": len(action_items) + 1,
-                    "task": s[:220],
+                    "task": cleaned_task[:220],
                     "owner": owner,
                     "deadline": "Not specified",
                     "priority": "Medium",
@@ -71,14 +85,15 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
             break
 
     if not decisions and sentences:
+        first_speaker = sentences[0].get("speaker")
         decisions = [
             {
                 "id": 1,
-                "decision": sentences[0][:220],
+                "decision": sentences[0]["text"][:220],
                 "context": "Extracted using local transcript analysis.",
                 "rationale": "No explicit decision markers found; the first meaningful statement was used.",
                 "confidence": "Low",
-                "stakeholders": sorted(list(speakers))[:4],
+                "stakeholders": [first_speaker] if first_speaker else [],
                 "dissenters": [],
             }
         ]
@@ -88,8 +103,8 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
         "action_items": action_items,
         "brief": {
             "headline": f"{meeting_name}: local transcript analysis generated",
-            "key_points": [s[:160] for s in sentences[:5]],
-            "risk_flags": [s[:160] for s in sentences if any(k in s.lower() for k in ["risk", "block", "delay", "concern"] )][:3],
+            "key_points": [s["text"][:160] for s in sentences[:5]],
+            "risk_flags": [s["text"][:160] for s in sentences if any(k in s["text"].lower() for k in ["risk", "block", "delay", "concern"] )][:3],
             "overall_outcome": "Neutral",
         },
     }
