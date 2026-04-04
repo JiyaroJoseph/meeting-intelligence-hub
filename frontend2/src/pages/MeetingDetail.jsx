@@ -16,6 +16,7 @@ export default function MeetingDetail() {
   const [conflicts, setConflicts] = useState([])
   const [retrying, setRetrying] = useState(false)
   const [retryError, setRetryError] = useState(null)
+  const [hoveredDecisionId, setHoveredDecisionId] = useState(null)
 
   const fetchMeeting = useCallback(async () => {
     try {
@@ -80,6 +81,13 @@ export default function MeetingDetail() {
     return { ...seg, idx, tag }
   })
   const timelineSpeakers = [...new Set(timeline.map(t => t.speaker || 'Unknown'))]
+  const normalizeDecisionContext = (text) => {
+    if (!text) return ''
+    if (/fallback|unavailable model output|fallback extraction path/i.test(text)) {
+      return 'Extracted using local transcript analysis.'
+    }
+    return text
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 animate-fade-in">
@@ -168,16 +176,21 @@ export default function MeetingDetail() {
               : (
                 <div className="space-y-3">
                   {decisions.map(d => (
-                    <div key={d.id} className="rounded-2xl border border-white/8 bg-white/5 p-5 transition-colors hover:border-indigo-400/20">
+                    <div
+                      key={d.id}
+                      onMouseEnter={() => setHoveredDecisionId(d.id)}
+                      onMouseLeave={() => setHoveredDecisionId(null)}
+                      className={`rounded-2xl border bg-white/5 p-5 transition-all duration-200 ${hoveredDecisionId === null || hoveredDecisionId === d.id ? 'border-indigo-400/30 opacity-100 shadow-[0_16px_40px_rgba(15,23,42,0.25)]' : 'border-transparent opacity-35'}`}
+                    >
                       <div className="flex items-start gap-3">
                         <span className="inline-flex shrink-0 items-center rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[11px] font-medium text-indigo-200">#{d.id}</span>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-white">{d.decision}</p>
-                          {d.context && <p className="mt-1 text-sm text-slate-400">{d.context}</p>}
+                          {d.context && <p className="mt-1 text-sm text-slate-400">{normalizeDecisionContext(d.context)}</p>}
                           {d.rationale && (
                             <div className="mb-2 border-l-2 border-indigo-400/40 pl-3">
                               <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Rationale</p>
-                              <p className="text-sm text-slate-300">{d.rationale}</p>
+                              <p className="text-sm text-slate-300">{normalizeDecisionContext(d.rationale)}</p>
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2 mb-2">

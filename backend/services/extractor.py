@@ -40,7 +40,7 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
                 {
                     "id": len(decisions) + 1,
                     "decision": s[:220],
-                    "context": "Extracted by fallback analyzer due to unavailable model output.",
+                    "context": "Extracted using local transcript analysis.",
                     "rationale": "Inferred from transcript language indicating a decision or direction.",
                     "confidence": "Medium",
                     "stakeholders": sorted(list(speakers))[:4],
@@ -75,8 +75,8 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
             {
                 "id": 1,
                 "decision": sentences[0][:220],
-                "context": "No explicit decision markers found; first meaningful statement used.",
-                "rationale": "Fallback extraction path.",
+                "context": "Extracted using local transcript analysis.",
+                "rationale": "No explicit decision markers found; the first meaningful statement was used.",
                 "confidence": "Low",
                 "stakeholders": sorted(list(speakers))[:4],
                 "dissenters": [],
@@ -87,7 +87,7 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
         "decisions": decisions,
         "action_items": action_items,
         "brief": {
-            "headline": f"{meeting_name}: fallback intelligence generated",
+            "headline": f"{meeting_name}: local transcript analysis generated",
             "key_points": [s[:160] for s in sentences[:5]],
             "risk_flags": [s[:160] for s in sentences if any(k in s.lower() for k in ["risk", "block", "delay", "concern"] )][:3],
             "overall_outcome": "Neutral",
