@@ -66,7 +66,14 @@ export default function ChatPanel({ meetingId }) {
     }
   }
 
-  const onKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }
+  const onKey = (e) => {
+    if (e.isComposing) return
+    const isEnter = e.key === 'Enter' || e.code === 'NumpadEnter'
+    if (isEnter && !e.shiftKey) {
+      e.preventDefault()
+      send()
+    }
+  }
 
   const formatTime = (value) => {
     if (!value) return ''
@@ -161,7 +168,13 @@ export default function ChatPanel({ meetingId }) {
       </div>
 
       <div className="border-t border-white/5 p-4">
-        <div className="flex items-end gap-3 rounded-2xl border border-white/8 bg-white/5 p-3 transition-colors focus-within:border-indigo-400/30 focus-within:bg-white/[0.07]">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            send()
+          }}
+          className="flex items-end gap-3 rounded-2xl border border-white/8 bg-white/5 p-3 transition-colors focus-within:border-indigo-400/30 focus-within:bg-white/[0.07]"
+        >
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -170,10 +183,10 @@ export default function ChatPanel({ meetingId }) {
             rows={1}
             className="min-h-[44px] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none"
           />
-          <button onClick={send} disabled={!input.trim() || loading} className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500 text-white transition-colors hover:bg-indigo-400 disabled:opacity-40">
+          <button type="submit" disabled={!input.trim() || loading} className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500 text-white transition-colors hover:bg-indigo-400 disabled:opacity-40">
             <Send size={14} />
           </button>
-        </div>
+        </form>
       </div>
     </div>
   )
