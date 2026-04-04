@@ -9,6 +9,7 @@ export default function ChatPanel({ meetingId }) {
   const [loading, setLoading] = useState(false)
   const [typingId, setTypingId] = useState(null)
   const bottomRef = useRef(null)
+  const inputRef = useRef(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
@@ -75,6 +76,17 @@ export default function ChatPanel({ meetingId }) {
     }
   }
 
+  const applySuggestion = (text) => {
+    setInput(text)
+    requestAnimationFrame(() => {
+      if (inputRef.current) {
+        inputRef.current.focus()
+        const len = text.length
+        inputRef.current.setSelectionRange(len, len)
+      }
+    })
+  }
+
   const formatTime = (value) => {
     if (!value) return ''
     return new Date(value).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
@@ -104,7 +116,7 @@ export default function ChatPanel({ meetingId }) {
             </div>
             <div className="grid w-full gap-2 md:max-w-xl md:grid-cols-1">
               {['"What did we decide about the API launch?"', '"Who is responsible for the budget?"', '"What concerns did the Finance Lead raise?"'].map(q => (
-                <button key={q} onClick={() => setInput(q.replace(/"/g, ''))} className="rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-left text-sm text-slate-300 transition-all hover:-translate-y-0.5 hover:border-indigo-400/20 hover:bg-white/[0.07]">{q}</button>
+                <button key={q} onClick={() => applySuggestion(q.replace(/"/g, ''))} className="rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-left text-sm text-slate-300 transition-all hover:-translate-y-0.5 hover:border-indigo-400/20 hover:bg-white/[0.07]">{q}</button>
               ))}
             </div>
           </div>
@@ -176,6 +188,7 @@ export default function ChatPanel({ meetingId }) {
           className="flex items-end gap-3 rounded-2xl border border-white/8 bg-white/5 p-3 transition-colors focus-within:border-indigo-400/30 focus-within:bg-white/[0.07]"
         >
           <textarea
+            ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={onKey}
