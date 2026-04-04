@@ -20,6 +20,7 @@ export const getMeetings = () => withMockFallback(() => api.get('/meetings'), mo
 export const getMeeting = (id) => {
   return withMockFallback(() => api.get(`/meetings/${id}`), mockMeetings.find(m => m.id === id))
 }
+export const reanalyzeMeeting = (id) => api.post(`/meetings/${id}/reanalyze`)
 export const deleteMeeting = (id) => api.delete(`/meetings/${id}`)
 
 export const uploadTranscript = (file, onProgress) => {

@@ -17,7 +17,8 @@ def create_meeting(name: str, parsed: dict, filename: str) -> dict:
         "segments": parsed.get("segments", []),
         "format": parsed.get("format", "txt"),
         "intel": None,
-        "status": "uploaded"
+        "status": "uploaded",
+        "error_message": None,
     }
     meetings[meeting_id] = meeting
     return meeting
@@ -32,10 +33,15 @@ def update_intel(meeting_id: str, intel: dict):
     if meeting_id in meetings:
         meetings[meeting_id]["intel"] = intel
         meetings[meeting_id]["status"] = "ready"
+        meetings[meeting_id]["error_message"] = None
 
-def set_status(meeting_id: str, status: str):
+def set_status(meeting_id: str, status: str, error_message: Optional[str] = None):
     if meeting_id in meetings:
         meetings[meeting_id]["status"] = status
+        if status == "error":
+            meetings[meeting_id]["error_message"] = error_message or "Analysis failed."
+        elif error_message is None:
+            meetings[meeting_id]["error_message"] = None
 
 def delete_meeting(meeting_id: str):
     meetings.pop(meeting_id, None)

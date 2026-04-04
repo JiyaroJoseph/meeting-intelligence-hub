@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getMeeting, getBrief, getConflicts, exportCSV, exportPDF } from '../api/client'
+import { getMeeting, getBrief, getConflicts, exportCSV, exportPDF, reanalyzeMeeting } from '../api/client'
 import { StatusBadge, PriorityBadge, SectionHeader, Spinner } from '../components/UI'
 import ChatPanel from '../components/ChatPanel'
 import BriefCard from '../components/BriefCard'
@@ -14,6 +14,8 @@ export default function MeetingDetail() {
   const [briefLoading, setBriefLoading] = useState(false)
   const [showBrief, setShowBrief] = useState(false)
   const [conflicts, setConflicts] = useState([])
+  const [retrying, setRetrying] = useState(false)
+  const [retryError, setRetryError] = useState(null)
 
   const fetchMeeting = useCallback(async () => {
     try {
@@ -49,6 +51,19 @@ export default function MeetingDetail() {
       setBrief(res.data)
     } catch (e) { console.error(e) }
     finally { setBriefLoading(false) }
+  }
+
+  const handleRetryAnalysis = async () => {
+    setRetrying(true)
+    setRetryError(null)
+    try {
+      await reanalyzeMeeting(id)
+      await fetchMeeting()
+    } catch (e) {
+      setRetryError(e?.response?.data?.detail || 'Unable to queue re-analysis.')
+    } finally {
+      setRetrying(false)
+    }
   }
 
   if (loading) return <div className="flex items-center justify-center h-64"><Spinner size={28} /></div>
@@ -108,6 +123,23 @@ export default function MeetingDetail() {
           <div>
             <p className="font-mono text-xs text-ops-yellow tracking-widest">ANALYZING TRANSCRIPT</p>
             <p className="text-ops-muted text-xs mt-1">Claude is extracting intelligence. This takes 15–30 seconds.</p>
+          </div>
+        </div>
+      )}
+
+      {meeting.status === 'error' && (
+        <div className="border border-ops-red/30 bg-ops-red/5 p-5 mb-8">
+          <p className="font-mono text-xs text-ops-red tracking-widest mb-2">ANALYSIS FAILED</p>
+          <p className="text-ops-muted text-xs mb-4">{meeting.error_message || 'The transcript could not be processed.'}</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRetryAnalysis}
+              disabled={retrying}
+              className="bg-ops-gold text-ops-black font-mono text-xs tracking-widest px-4 py-2.5 hover:bg-ops-gold/80 transition-colors disabled:opacity-50"
+            >
+              {retrying ? 'RETRYING...' : 'RETRY ANALYSIS'}
+            </button>
+            {retryError && <span className="font-mono text-[10px] text-ops-red">{retryError}</span>}
           </div>
         </div>
       )}

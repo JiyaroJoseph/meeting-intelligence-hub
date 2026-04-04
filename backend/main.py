@@ -74,7 +74,7 @@ def run_extraction(meeting_id: str):
         intel = extract_intel(meeting["full_text"], meeting["name"])
         update_intel(meeting_id, intel)
     except Exception as e:
-        set_status(meeting_id, "error")
+        set_status(meeting_id, "error", str(e))
         print(f"Extraction error for {meeting_id}: {e}")
 
 @app.get("/")
@@ -88,6 +88,7 @@ def list_meetings():
             "id": m["id"], "name": m["name"], "filename": m["filename"],
             "uploaded_at": m["uploaded_at"], "speakers": m["speakers"],
             "word_count": m["word_count"], "format": m["format"], "status": m["status"],
+            "error_message": m.get("error_message"),
             "action_items_count": len(m["intel"]["action_items"]) if m["intel"] else 0,
             "decisions_count": len(m["intel"]["decisions"]) if m["intel"] else 0,
         }
@@ -117,7 +118,16 @@ def get_meeting_detail(meeting_id: str):
     return {"id": meeting["id"], "name": meeting["name"], "filename": meeting["filename"],
             "uploaded_at": meeting["uploaded_at"], "speakers": meeting["speakers"],
             "word_count": meeting["word_count"], "status": meeting["status"],
+            "error_message": meeting.get("error_message"),
             "segments": meeting.get("segments", []), "intel": meeting["intel"]}
+
+@app.post("/api/meetings/{meeting_id}/reanalyze")
+def reanalyze_meeting(meeting_id: str, background_tasks: BackgroundTasks):
+    meeting = get_meeting(meeting_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Mission file not found.")
+    background_tasks.add_task(run_extraction, meeting_id)
+    return {"queued": True, "meeting_id": meeting_id}
 
 @app.get("/api/meetings/{meeting_id}/conflicts")
 def meeting_conflicts(meeting_id: str):

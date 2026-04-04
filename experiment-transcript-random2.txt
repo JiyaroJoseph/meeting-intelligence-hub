@@ -1,0 +1,67 @@
+Alex: Alright team, let’s get started. Main agenda today is the payment gateway rollout and the mobile crash issue.
+
+Priya: Payment gateway integration is 80 percent done, but we’re still seeing failures in retry logic during peak loads.
+
+Rahul: Yeah, logs show that retry requests are not idempotent. That could lead to duplicate transactions.
+
+Alex: That’s critical. We cannot risk double charges.
+
+Priya: Agreed. I suggest we delay rollout until retry logic is fixed.
+
+Rahul: I agree partially, but business team is pushing hard for release this week.
+
+Neha: From customer perspective, failed or duplicate payments will destroy trust. I strongly recommend delay.
+
+Alex: Decision one. Payment gateway rollout is postponed until retry mechanism is stable and tested.
+
+Rahul: Action item. I will redesign retry logic to ensure idempotency by Thursday EOD.
+
+Priya: Action item. I will run load testing with new retry flow and share report by Friday noon.
+
+Neha: Action item. I will inform customer success team and prepare communication draft by Wednesday.
+
+---
+
+Alex: Next issue. Mobile app crashes on login for Android users.
+
+Rahul: Root cause seems to be memory leak in session handler.
+
+Priya: Fix is ready but not deployed yet.
+
+Neha: Users are already complaining on Play Store.
+
+Alex: Decision two. Immediate hotfix release for Android crash within 24 hours.
+
+Rahul: Action item. I will deploy hotfix by tomorrow 6 PM.
+
+Priya: Action item. I will monitor crash analytics post-deployment for 48 hours.
+
+---
+
+Neha: One concern. If hotfix fails, rollback plan is unclear.
+
+Alex: Good point.
+
+Rahul: We don’t have automated rollback configured yet.
+
+Alex: Risk identified. Lack of rollback plan may increase downtime if hotfix fails.
+
+Rahul: Action item. I will set up rollback mechanism before deployment.
+
+---
+
+Priya: Another thing. Analytics dashboard is showing inconsistent revenue numbers.
+
+Rahul: That’s due to caching mismatch between services.
+
+Alex: Is it blocking anything?
+
+Priya: Not blocking, but leadership is already questioning data accuracy.
+
+Alex: Decision three. Fix analytics inconsistency after payment gateway stabilization.
+
+Neha: Makes sense.
+
+---
+
+Alex: Final summary. We are delaying payment rollout, pushing an urgent mobile hotfix, and addressing analytics later. Priority is stability over speed.
