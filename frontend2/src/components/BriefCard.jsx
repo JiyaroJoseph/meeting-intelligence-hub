@@ -4,7 +4,30 @@ import { X, FileText } from 'lucide-react'
 
 export default function BriefCard({ brief, loading, onClose }) {
   if (!brief && !loading) return null
-  const intelBullets = (brief?.key_intel?.length ? brief.key_intel : brief?.key_points || []).slice(0, 4)
+
+  const isBoilerplateLine = (text) => {
+    const t = String(text || '').trim().toLowerCase()
+    if (!t) return true
+    return /local fallback summarizer|model access failed|local transcript analysis generated/.test(t)
+  }
+
+  const scoreBullet = (text) => {
+    const t = String(text || '').toLowerCase()
+    let score = 0
+    if (/(decide|decision|approve|delay|launch|ship|risk|block|deadline|owner|action|task)/.test(t)) score += 3
+    if (/(today|this week|monday|friday|q\d|by\s)/.test(t)) score += 1
+    if (/(thanks everyone|hello|hi team|welcome)/.test(t)) score -= 3
+    return score
+  }
+
+  const rawBullets = brief?.key_intel?.length ? brief.key_intel : brief?.key_points || []
+  const intelBullets = [...rawBullets]
+    .filter((item) => !isBoilerplateLine(item))
+    .sort((a, b) => scoreBullet(b) - scoreBullet(a))
+    .slice(0, 4)
+
+  const displayHeadline = isBoilerplateLine(brief?.headline) ? 'Meeting summary' : brief?.headline
+  const displaySituation = isBoilerplateLine(brief?.situation) ? '' : brief?.situation
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow
@@ -42,8 +65,8 @@ export default function BriefCard({ brief, loading, onClose }) {
         {brief && !loading && (
           <div className="animate-slide-up space-y-5 p-6">
             <div>
-              <h2 className="text-2xl font-semibold leading-tight text-white">{brief.headline || 'Meeting summary'}</h2>
-              {brief.situation && <p className="mt-3 text-sm leading-6 text-slate-300">{brief.situation}</p>}
+              <h2 className="text-2xl font-semibold leading-tight text-white">{displayHeadline || 'Meeting summary'}</h2>
+              {displaySituation && <p className="mt-3 text-sm leading-6 text-slate-300">{displaySituation}</p>}
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
