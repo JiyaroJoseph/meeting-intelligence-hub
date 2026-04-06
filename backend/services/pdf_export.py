@@ -1,293 +1,417 @@
-from reportlab.lib.pagesizes import A4
+from datetime import datetime
+from io import BytesIO
+
 from reportlab.lib import colors
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, PageTemplate, PageBreak, Frame
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-from reportlab.pdfgen import canvas
-from io import BytesIO
-from datetime import datetime
+from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-# Professional color palette
-NAVY_DARK = colors.HexColor("#0f172a")
-SLATE_DARK = colors.HexColor("#1e293b")
-CHARCOAL = colors.HexColor("#1a1a1a")
+
+PAGE_BG = colors.HexColor("#0f172a")
+PANEL_BG = colors.HexColor("#111827")
+PANEL_BG_ALT = colors.HexColor("#0b1220")
+CARD_BG = colors.HexColor("#172554")
+HEADER_BG = colors.HexColor("#020617")
+TEXT = colors.HexColor("#e5e7eb")
+TEXT_MID = colors.HexColor("#cbd5e1")
+TEXT_DIM = colors.HexColor("#94a3b8")
+ACCENT = colors.HexColor("#1e40af")
+ACCENT_SOFT = colors.HexColor("#60a5fa")
+RED = colors.HexColor("#dc2626")
+RED_SOFT = colors.HexColor("#fef2f2")
+AMBER = colors.HexColor("#d97706")
+GREEN = colors.HexColor("#059669")
+LINE = colors.HexColor("#334155")
 WHITE = colors.HexColor("#ffffff")
-BLUE_ACCENT = colors.HexColor("#1e40af")
-RED_ACCENT = colors.HexColor("#dc2626")
-RED_LIGHT = colors.HexColor("#fef2f2")
-AMBER_ACCENT = colors.HexColor("#d97706")
-GREEN_ACCENT = colors.HexColor("#059669")
-GRAY_MID = colors.HexColor("#6b7280")
-GRAY_LIGHT = colors.HexColor("#f8fafc")
 
-class HeaderFooterCanvas(canvas.Canvas):
-    """Custom canvas to add header and footer to all pages"""
-    def __init__(self, *args, **kwargs):
-        canvas.Canvas.__init__(self, *args, **kwargs)
-        self.pages = []
-    
-    def showPage(self):
-        self.pages.append(dict(self.__dict__))
-        self._startPage()
-    
-    def save(self):
-        page_count = len(self.pages)
-        for page_num, page in enumerate(self.pages, 1):
-            self.__dict__.update(page)
-            # Footer bar background
-            self.setFillColor(GRAY_LIGHT)
-            self.rect(0, 0, A4[0], 0.8*cm, fill=1, stroke=0)
-            
-            # Footer top border
-            self.setStrokeColor(GRAY_MID)
-            self.setLineWidth(0.5)
-            self.line(1*cm, 0.8*cm, A4[0]-1*cm, 0.8*cm)
-            
-            # Footer text
-            self.setFont("Helvetica", 8)
-            self.setFillColor(GRAY_MID)
-            self.drawString(1.5*cm, 0.25*cm, "DEBRIEF · Executive Brief")
-            self.drawRightString(A4[0]-1.5*cm, 0.25*cm, f"Page {page_num} · {datetime.now().strftime('%b %d, %Y')}")
-            
-            canvas.Canvas.showPage(self)
-        canvas.Canvas.save(self)
 
 def generate_dossier(meeting_name: str, intel: dict) -> bytes:
     buffer = BytesIO()
+    document_date = datetime.now().strftime("%B %d, %Y")
+
+    def page_decorations(canvas, doc):
+        canvas.saveState()
+
+        page_width, page_height = A4
+
+        canvas.setFillColor(PAGE_BG)
+        canvas.rect(0, 0, page_width, page_height, fill=1, stroke=0)
+
+        header_height = 1.9 * cm
+        canvas.setFillColor(HEADER_BG)
+        canvas.rect(0, page_height - header_height, page_width, header_height, fill=1, stroke=0)
+
+        canvas.setStrokeColor(LINE)
+        canvas.setLineWidth(0.9)
+        canvas.line(doc.leftMargin, page_height - header_height, page_width - doc.rightMargin, page_height - header_height)
+
+        canvas.setFillColor(WHITE)
+        canvas.setFont("Helvetica-Bold", 16)
+        canvas.drawString(doc.leftMargin, page_height - 1.0 * cm, "DEBRIEF")
+
+        canvas.setFillColor(TEXT_MID)
+        canvas.setFont("Helvetica", 8.5)
+        canvas.drawString(doc.leftMargin, page_height - 1.45 * cm, meeting_name)
+        canvas.drawRightString(
+            page_width - doc.rightMargin,
+            page_height - 1.0 * cm,
+            f"Executive Brief · {document_date} · INTERNAL USE ONLY",
+        )
+
+        footer_height = 0.85 * cm
+        canvas.setFillColor(PANEL_BG)
+        canvas.rect(0, 0, page_width, footer_height, fill=1, stroke=0)
+        canvas.setStrokeColor(LINE)
+        canvas.setLineWidth(0.6)
+        canvas.line(doc.leftMargin, footer_height, page_width - doc.rightMargin, footer_height)
+
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColor(TEXT_DIM)
+        canvas.drawString(doc.leftMargin, 0.25 * cm, "DEBRIEF · Executive Brief")
+        canvas.drawRightString(page_width - doc.rightMargin, 0.25 * cm, f"Page {canvas.getPageNumber()} · {document_date}")
+
+        canvas.restoreState()
+
     doc = SimpleDocTemplate(
-        buffer, 
-        pagesize=A4, 
-        rightMargin=2*cm, 
-        leftMargin=2*cm, 
-        topMargin=2.5*cm, 
-        bottomMargin=1.5*cm,
-        title="DEBRIEF Executive Brief"
+        buffer,
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=3.0 * cm,
+        bottomMargin=1.35 * cm,
+        title="DEBRIEF Executive Brief",
+        author="DEBRIEF",
     )
-    elements = []
 
-    # Color scheme for priority badges
-    priority_colors = {
-        "High": (RED_ACCENT, colors.HexColor("#fee2e2")),
-        "Medium": (AMBER_ACCENT, colors.HexColor("#fef3c7")),
-        "Low": (GREEN_ACCENT, colors.HexColor("#dcfce7")),
-    }
-
-    # Typography styles
     title_style = ParagraphStyle(
         "Title",
-        fontSize=24,
-        textColor=WHITE,
         fontName="Helvetica-Bold",
+        fontSize=20,
+        leading=20,
+        textColor=WHITE,
+        alignment=TA_LEFT,
         spaceAfter=0,
-        alignment=TA_LEFT
     )
-    
     meta_style = ParagraphStyle(
         "Meta",
-        fontSize=9,
-        textColor=colors.HexColor("#94a3b8"),
         fontName="Helvetica",
+        fontSize=8.5,
+        leading=11,
+        textColor=TEXT_DIM,
+        alignment=TA_RIGHT,
         spaceAfter=0,
-        alignment=TA_LEFT
     )
-    
-    section_header_style = ParagraphStyle(
-        "SectionHeader",
-        fontSize=12,
-        textColor=BLUE_ACCENT,
+    section_label_style = ParagraphStyle(
+        "SectionLabel",
         fontName="Helvetica-Bold",
-        spaceAfter=8,
-        spaceBefore=12,
-        letterSpacing=1
+        fontSize=12,
+        leading=14,
+        textColor=ACCENT_SOFT,
+        spaceAfter=0,
     )
-    
     body_style = ParagraphStyle(
         "Body",
-        fontSize=10,
-        textColor=CHARCOAL,
         fontName="Helvetica",
+        fontSize=10,
+        leading=16,
+        textColor=TEXT_MID,
         spaceAfter=6,
-        leading=15
     )
-    
+    body_strong_style = ParagraphStyle(
+        "BodyStrong",
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=16,
+        textColor=TEXT,
+        spaceAfter=4,
+    )
     bullet_style = ParagraphStyle(
         "Bullet",
-        fontSize=10,
-        textColor=CHARCOAL,
         fontName="Helvetica",
-        spaceAfter=5,
-        leading=15,
-        leftIndent=25
+        fontSize=10,
+        leading=16,
+        textColor=TEXT,
+        leftIndent=16,
+        bulletIndent=0,
+        spaceAfter=4,
     )
-    
-    headline_style = ParagraphStyle(
-        "Headline",
-        fontSize=13,
-        textColor=CHARCOAL,
+    cell_style = ParagraphStyle(
+        "Cell",
+        fontName="Helvetica",
+        fontSize=9.2,
+        leading=12,
+        textColor=TEXT,
+        spaceAfter=0,
+    )
+    header_cell_style = ParagraphStyle(
+        "HeaderCell",
         fontName="Helvetica-Bold",
-        spaceAfter=6,
-        leading=16
+        fontSize=9,
+        leading=11,
+        textColor=WHITE,
+        alignment=TA_LEFT,
     )
-    
+    center_cell_style = ParagraphStyle(
+        "CenterCell",
+        fontName="Helvetica-Bold",
+        fontSize=8.8,
+        leading=10,
+        textColor=WHITE,
+        alignment=TA_LEFT,
+    )
     risk_style = ParagraphStyle(
         "Risk",
-        fontSize=10,
-        textColor=RED_ACCENT,
         fontName="Helvetica",
-        spaceAfter=4,
-        leftIndent=25
+        fontSize=9.5,
+        leading=13,
+        textColor=RED,
+        spaceAfter=0,
     )
 
-    # === HEADER ===
-    header_table_data = [[Paragraph("DEBRIEF", title_style), ""]]
-    header_table = Table(header_table_data, colWidths=[10*cm, 6*cm])
-    header_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), NAVY_DARK),
-        ("ALIGN", (0, 0), (0, -1), "LEFT"),
-        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-        ("LEFTPADDING", (0, 0), (0, -1), 12),
-        ("RIGHTPADDING", (1, 0), (1, -1), 12),
-    ]))
-    
-    elements.append(header_table)
-    
-    meta_info = f"Executive Brief · {datetime.now().strftime('%B %d, %Y')} · INTERNAL USE ONLY"
-    elements.append(Paragraph(meta_info, meta_style))
-    elements.append(Spacer(1, 0.3*cm))
-    elements.append(HRFlowable(width="100%", thickness=1.5, color=SLATE_DARK))
-    elements.append(Spacer(1, 0.4*cm))
+    def section_header(title: str):
+        block = Table(
+            [[Paragraph(title.upper(), section_label_style)]],
+            colWidths=[16.6 * cm],
+        )
+        block.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, 0), PANEL_BG),
+                    ("LINEBEFORE", (0, 0), (0, 0), 5, ACCENT),
+                    ("LEFTPADDING", (0, 0), (0, 0), 10),
+                    ("RIGHTPADDING", (0, 0), (0, 0), 10),
+                    ("TOPPADDING", (0, 0), (0, 0), 6),
+                    ("BOTTOMPADDING", (0, 0), (0, 0), 6),
+                ]
+            )
+        )
+        return block
 
-    # === BRIEF SUMMARY ===
-    brief = intel.get("brief", {})
-    if brief and brief.get("headline"):
-        summary_table_data = [[Paragraph(brief["headline"], headline_style)]]
-        summary_table = Table(summary_table_data, colWidths=[15*cm])
-        summary_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#eff6ff")),
-            ("LEFTPADDING", (0, 0), (-1, -1), 12),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 12),
-            ("TOPPADDING", (0, 0), (-1, -1), 10),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-            ("BORDER", (0, 0), (-1, -1), 2, BLUE_ACCENT),
-            ("LINEABOVE", (0, 0), (-1, -1), 4, BLUE_ACCENT),
-        ]))
-        elements.append(summary_table)
-        elements.append(Spacer(1, 0.3*cm))
+    def card(flowables, background=PANEL_BG):
+        panel = Table([[flowables]], colWidths=[16.6 * cm])
+        panel.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), background),
+                    ("BOX", (0, 0), (-1, -1), 0.7, LINE),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                    ("TOPPADDING", (0, 0), (-1, -1), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ]
+            )
+        )
+        return panel
 
-    # Situation paragraph
-    if brief and brief.get("situation"):
-        elements.append(Paragraph(brief["situation"], body_style))
-        elements.append(Spacer(1, 0.3*cm))
+    def soft_divider():
+        return HRFlowable(width="100%", thickness=0.8, color=LINE, spaceBefore=6, spaceAfter=6)
 
-    # === KEY POINTS ===
-    if brief and brief.get("key_points"):
-        elements.append(Spacer(1, 0.1*cm))
-        elements.append(Paragraph("KEY POINTS", section_header_style))
-        for kp in brief.get("key_points", [])[:5]:
-            clean_kp = (kp or "").strip()
-            if clean_kp:
-                elements.append(Paragraph(f"✓ {clean_kp}", bullet_style))
-        elements.append(Spacer(1, 0.3*cm))
+    elements = []
 
-    # === DECISIONS TABLE ===
-    decisions = intel.get("decisions", [])
+    brief = intel.get("brief", {}) or {}
+    headline = (brief.get("headline") or "").strip()
+    situation = (brief.get("situation") or "").strip()
+    key_points = [point.strip() for point in (brief.get("key_points") or []) if (point or "").strip()]
+    risk_flags = [flag.strip() for flag in (brief.get("risk_flags") or []) if (flag or "").strip()]
+
+    elements.append(section_header("Summary"))
+
+    summary_inner = []
+    if headline:
+        summary_inner.append(Paragraph(headline, body_strong_style))
+    if situation:
+        summary_inner.append(Spacer(1, 0.08 * cm))
+        summary_inner.append(Paragraph(situation, body_style))
+
+    if summary_inner:
+        summary_card = Table(
+            [["", summary_inner]],
+            colWidths=[0.22 * cm, 16.38 * cm],
+        )
+        summary_card.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, 0), ACCENT),
+                    ("BACKGROUND", (1, 0), (1, 0), CARD_BG),
+                    ("BOX", (0, 0), (-1, -1), 0.7, LINE),
+                    ("LEFTPADDING", (0, 0), (0, 0), 0),
+                    ("RIGHTPADDING", (0, 0), (0, 0), 0),
+                    ("TOPPADDING", (0, 0), (0, 0), 0),
+                    ("BOTTOMPADDING", (0, 0), (0, 0), 0),
+                    ("LEFTPADDING", (1, 0), (1, 0), 12),
+                    ("RIGHTPADDING", (1, 0), (1, 0), 12),
+                    ("TOPPADDING", (1, 0), (1, 0), 10),
+                    ("BOTTOMPADDING", (1, 0), (1, 0), 10),
+                ]
+            )
+        )
+        elements.append(summary_card)
+        elements.append(Spacer(1, 0.18 * cm))
+
+    if key_points:
+        elements.append(section_header("Key Points"))
+        bullet_items = [Paragraph(f"✓ {point}", bullet_style) for point in key_points[:5]]
+        elements.append(card(bullet_items, background=PANEL_BG_ALT))
+        elements.append(Spacer(1, 0.18 * cm))
+
+    if situation and not headline:
+        elements.append(card([Paragraph(situation, body_style)], background=PANEL_BG_ALT))
+        elements.append(Spacer(1, 0.18 * cm))
+
+    decisions = intel.get("decisions", []) or []
     if decisions:
-        elements.append(Paragraph("DECISIONS", section_header_style))
-        table_data = [["#", "Decision", "Confidence", "Stakeholders"]]
-        
-        for idx, d in enumerate(decisions[:5], 1):
-            confidence = d.get("confidence", "Medium")
-            conf_text_color, conf_bg_color = priority_colors.get(confidence, (GRAY_MID, GRAY_LIGHT))
-            
-            table_data.append([
-                str(idx),
-                d.get("decision", "")[:80],
-                Paragraph(f'<b>{confidence}</b>', 
-                         ParagraphStyle("conf", fontSize=9, fontName="Helvetica-Bold", textColor=conf_text_color)),
-                ", ".join(d.get("stakeholders", [])[:2])
-            ])
-        
-        table = Table(table_data, colWidths=[0.8*cm, 8*cm, 2.5*cm, 3*cm])
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), SLATE_DARK),
+        elements.append(section_header("Decisions"))
+
+        table_data = [[
+            Paragraph("#", header_cell_style),
+            Paragraph("Decision", header_cell_style),
+            Paragraph("Confidence", header_cell_style),
+            Paragraph("Stakeholders", header_cell_style),
+        ]]
+
+        confidence_colors = {
+            "High": (GREEN, colors.HexColor("#0f2e24")),
+            "Medium": (AMBER, colors.HexColor("#2f2310")),
+            "Low": (RED, colors.HexColor("#2f1212")),
+        }
+
+        for idx, decision in enumerate(decisions[:5], 1):
+            confidence = (decision.get("confidence") or "Medium").title()
+            stakeholders = ", ".join((decision.get("stakeholders") or [])[:2]) or "Unassigned"
+            table_data.append(
+                [
+                    Paragraph(str(idx), center_cell_style),
+                    Paragraph(decision.get("decision", ""), cell_style),
+                    Paragraph(confidence, center_cell_style),
+                    Paragraph(stakeholders, cell_style),
+                ]
+            )
+
+        decisions_table = Table(
+            table_data,
+            colWidths=[0.8 * cm, 8.6 * cm, 2.8 * cm, 4.4 * cm],
+            repeatRows=1,
+        )
+        style_commands = [
+            ("BACKGROUND", (0, 0), (-1, 0), PANEL_BG),
             ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, GRAY_LIGHT]),
-            ("TEXTCOLOR", (0, 1), (-1, -1), CHARCOAL),
-            ("FONTSIZE", (0, 1), (-1, -1), 9),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [PANEL_BG_ALT, PANEL_BG]),
+            ("BOX", (0, 0), (-1, -1), 0.8, LINE),
+            ("GRID", (0, 0), (-1, -1), 0.35, LINE),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ("LEFTPADDING", (0, 0), (-1, -1), 8),
             ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ]))
-        elements.append(table)
-        elements.append(Spacer(1, 0.3*cm))
+            ("TOPPADDING", (0, 0), (-1, -1), 7),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ]
+        for row_index, decision in enumerate(decisions[:5], 1):
+            confidence = (decision.get("confidence") or "Medium").title()
+            text_color, background = confidence_colors.get(confidence, (TEXT, PANEL_BG))
+            style_commands.extend(
+                [
+                    ("BACKGROUND", (2, row_index), (2, row_index), background),
+                    ("TEXTCOLOR", (2, row_index), (2, row_index), text_color),
+                    ("ALIGN", (2, row_index), (2, row_index), "CENTER"),
+                    ("BOX", (2, row_index), (2, row_index), 0.4, text_color),
+                ]
+            )
+        decisions_table.setStyle(TableStyle(style_commands))
+        elements.append(decisions_table)
+        elements.append(Spacer(1, 0.18 * cm))
 
-    # === ACTION ITEMS TABLE ===
-    actions = intel.get("action_items", [])
+    actions = intel.get("action_items", []) or []
     if actions:
-        elements.append(Paragraph("ACTION ITEMS", section_header_style))
-        table_data = [["#", "Task", "Owner", "Priority"]]
-        
-        for idx, a in enumerate(actions[:5], 1):
-            priority = a.get("priority", "Medium")
-            priority_text_color, priority_bg_color = priority_colors.get(priority, (GRAY_MID, GRAY_LIGHT))
-            
-            table_data.append([
-                str(idx),
-                a.get("task", "")[:70],
-                a.get("owner", "Unassigned")[:20],
-                Paragraph(f'<b>{priority}</b>', 
-                         ParagraphStyle("pri", fontSize=9, fontName="Helvetica-Bold", textColor=priority_text_color))
-            ])
-        
-        table = Table(table_data, colWidths=[0.8*cm, 8*cm, 3*cm, 2.5*cm])
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), SLATE_DARK),
+        elements.append(section_header("Action Items"))
+
+        table_data = [[
+            Paragraph("#", header_cell_style),
+            Paragraph("Task", header_cell_style),
+            Paragraph("Owner", header_cell_style),
+            Paragraph("Priority", header_cell_style),
+        ]]
+
+        priority_colors = {
+            "High": (RED, colors.HexColor("#2f1212")),
+            "Medium": (AMBER, colors.HexColor("#2f2310")),
+            "Low": (GREEN, colors.HexColor("#0f2e24")),
+        }
+
+        for idx, action in enumerate(actions[:5], 1):
+            priority = (action.get("priority") or "Medium").title()
+            owner = action.get("owner") or "Unassigned"
+            table_data.append(
+                [
+                    Paragraph(str(idx), center_cell_style),
+                    Paragraph(action.get("task", ""), cell_style),
+                    Paragraph(owner, cell_style),
+                    Paragraph(priority, center_cell_style),
+                ]
+            )
+
+        actions_table = Table(
+            table_data,
+            colWidths=[0.8 * cm, 9.2 * cm, 3.1 * cm, 2.7 * cm],
+            repeatRows=1,
+        )
+        style_commands = [
+            ("BACKGROUND", (0, 0), (-1, 0), PANEL_BG),
             ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, GRAY_LIGHT]),
-            ("TEXTCOLOR", (0, 1), (-1, -1), CHARCOAL),
-            ("FONTSIZE", (0, 1), (-1, -1), 9),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [PANEL_BG_ALT, PANEL_BG]),
+            ("BOX", (0, 0), (-1, -1), 0.8, LINE),
+            ("GRID", (0, 0), (-1, -1), 0.35, LINE),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ("LEFTPADDING", (0, 0), (-1, -1), 8),
             ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ]))
-        elements.append(table)
-        elements.append(Spacer(1, 0.3*cm))
+            ("TOPPADDING", (0, 0), (-1, -1), 7),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ]
+        for row_index, action in enumerate(actions[:5], 1):
+            priority = (action.get("priority") or "Medium").title()
+            text_color, background = priority_colors.get(priority, (TEXT, PANEL_BG))
+            style_commands.extend(
+                [
+                    ("BACKGROUND", (3, row_index), (3, row_index), background),
+                    ("TEXTCOLOR", (3, row_index), (3, row_index), text_color),
+                    ("ALIGN", (3, row_index), (3, row_index), "CENTER"),
+                    ("BOX", (3, row_index), (3, row_index), 0.4, text_color),
+                ]
+            )
+        actions_table.setStyle(TableStyle(style_commands))
+        elements.append(actions_table)
+        elements.append(Spacer(1, 0.18 * cm))
 
-    # === RISK FLAGS ===
-    if brief and brief.get("risk_flags"):
-        elements.append(Spacer(1, 0.1*cm))
-        elements.append(Paragraph("RISK FLAGS", section_header_style))
-        
-        for rf in brief.get("risk_flags", [])[:4]:
-            clean_rf = (rf or "").strip()
-            if clean_rf:
-                risk_table_data = [[Paragraph(f"▲ {clean_rf}", risk_style)]]
-                risk_table = Table(risk_table_data, colWidths=[15*cm])
-                risk_table.setStyle(TableStyle([
-                    ("BACKGROUND", (0, 0), (-1, -1), RED_LIGHT),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                    ("TOPPADDING", (0, 0), (-1, -1), 8),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                    ("BORDER", (0, 0), (-1, -1), 1, colors.HexColor("#fecaca")),
-                ]))
-                elements.append(risk_table)
-                elements.append(Spacer(1, 0.15*cm))
+    if risk_flags:
+        elements.append(section_header("Risk Flags"))
 
-    # Build PDF with custom footer
-    doc.build(elements, canvasmaker=HeaderFooterCanvas)
+        for flag in risk_flags[:4]:
+            risk_row = Table(
+                [[Paragraph(f"▲ {flag}", risk_style)]],
+                colWidths=[16.6 * cm],
+            )
+            risk_row.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, -1), RED_SOFT),
+                        ("TEXTCOLOR", (0, 0), (-1, -1), RED),
+                        ("BOX", (0, 0), (-1, -1), 0.7, colors.HexColor("#fecaca")),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                        ("TOPPADDING", (0, 0), (-1, -1), 7),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+                    ]
+                )
+            )
+            elements.append(risk_row)
+            elements.append(Spacer(1, 0.12 * cm))
+
+    if not (headline or situation or key_points or decisions or actions or risk_flags):
+        elements.append(section_header("Summary"))
+        elements.append(card([Paragraph("No executive brief data was available for this meeting.", body_style)], background=PANEL_BG_ALT))
+
+    elements.append(Spacer(1, 0.2 * cm))
+    elements.append(soft_divider())
+
+    doc.build(elements, onFirstPage=page_decorations, onLaterPages=page_decorations)
     return buffer.getvalue()
