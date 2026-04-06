@@ -179,7 +179,6 @@ def generate_dossier(meeting_name: str, intel: dict) -> bytes:
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (0, 0), PANEL_BG),
-                    ("LINEBEFORE", (0, 0), (0, 0), 5, ACCENT),
                     ("LEFTPADDING", (0, 0), (0, 0), 10),
                     ("RIGHTPADDING", (0, 0), (0, 0), 10),
                     ("TOPPADDING", (0, 0), (0, 0), 6),
@@ -227,23 +226,18 @@ def generate_dossier(meeting_name: str, intel: dict) -> bytes:
 
     if summary_inner:
         summary_card = Table(
-            [["", summary_inner]],
-            colWidths=[0.22 * cm, 16.38 * cm],
+            [[summary_inner]],
+            colWidths=[16.6 * cm],
         )
         summary_card.setStyle(
             TableStyle(
                 [
-                    ("BACKGROUND", (0, 0), (0, 0), ACCENT),
-                    ("BACKGROUND", (1, 0), (1, 0), CARD_BG),
+                    ("BACKGROUND", (0, 0), (-1, -1), CARD_BG),
                     ("BOX", (0, 0), (-1, -1), 0.7, LINE),
-                    ("LEFTPADDING", (0, 0), (0, 0), 0),
-                    ("RIGHTPADDING", (0, 0), (0, 0), 0),
-                    ("TOPPADDING", (0, 0), (0, 0), 0),
-                    ("BOTTOMPADDING", (0, 0), (0, 0), 0),
-                    ("LEFTPADDING", (1, 0), (1, 0), 12),
-                    ("RIGHTPADDING", (1, 0), (1, 0), 12),
-                    ("TOPPADDING", (1, 0), (1, 0), 10),
-                    ("BOTTOMPADDING", (1, 0), (1, 0), 10),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                    ("TOPPADDING", (0, 0), (-1, -1), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
                 ]
             )
         )
