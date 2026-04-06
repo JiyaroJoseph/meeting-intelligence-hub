@@ -4,7 +4,7 @@ import { getMeeting, getBrief, getConflicts, exportCSV, exportPDF, reanalyzeMeet
 import { StatusBadge, PriorityBadge, SectionHeader, Spinner, Skeleton } from '../components/UI'
 import ChatPanel from '../components/ChatPanel'
 import BriefCard from '../components/BriefCard'
-import { ArrowLeft, Download, FileText, Zap, AlertTriangle, Clock3, RefreshCw } from 'lucide-react'
+import { ArrowLeft, FileText, Zap, AlertTriangle, Clock3, RefreshCw } from 'lucide-react'
 
 export default function MeetingDetail() {
   const { id } = useParams()
@@ -153,9 +153,6 @@ export default function MeetingDetail() {
           <div className="flex flex-wrap gap-2 shrink-0">
             <button onClick={handleBrief} className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white transition-all hover:-translate-y-0.5 hover:bg-indigo-400">
               <Zap size={12} /> Brief me
-            </button>
-            <button onClick={() => exportCSV(id)} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-colors hover:border-indigo-400/25 hover:text-white">
-              <Download size={12} /> CSV
             </button>
             <button onClick={() => exportPDF(id)} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-colors hover:border-indigo-400/25 hover:text-white">
               <FileText size={12} /> PDF
