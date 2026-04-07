@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { mockMeetings, mockBrief, mockConflicts } from './mockData'
 
-const api = axios.create({ baseURL: '/api' })
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+const api = axios.create({ baseURL: apiBaseURL })
 
 // Fallback to mock data on connection errors
 const withMockFallback = async (fn, mockData) => {

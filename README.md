@@ -52,3 +52,31 @@ npm run dev
 
 ### 5. Optional environment setup
 If you want the AI-powered extraction to use an Anthropic API key, create a `.env` file in the `backend` folder and add your key there.
+
+## Hosted Link
+
+### Recommended deployment setup
+Because the frontend and backend are separate apps, deploy them separately and connect them with an environment variable.
+
+1. Deploy the backend first
+	- Use a service such as Render, Railway, or Fly.io.
+	- Set the backend start command to run FastAPI with Uvicorn.
+	- Add your environment variables, especially `ANTHROPIC_API_KEY`.
+	- After deployment, copy the backend URL.
+
+2. Make the frontend point to the deployed backend
+	- In the frontend deployment environment, set `VITE_API_BASE_URL` to your backend URL plus `/api`.
+	- Example: `https://your-backend.onrender.com/api`
+
+3. Deploy the frontend
+	- Use a service such as Vercel or Netlify.
+	- Build from the `frontend2` folder.
+	- Make sure the deployment uses the `VITE_API_BASE_URL` value above.
+
+4. Verify the live app
+	- Open the deployed frontend URL.
+	- Upload a transcript and confirm it reaches the backend.
+	- Check that transcript analysis, chat, CSV export, and PDF export all work.
+
+### Live URL
+Paste the deployed application link here once the frontend is live.
