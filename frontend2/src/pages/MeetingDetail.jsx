@@ -4,6 +4,7 @@ import { getMeeting, getBrief, getConflicts, exportCSV, exportPDF, reanalyzeMeet
 import { StatusBadge, PriorityBadge, SectionHeader, Spinner, Skeleton } from '../components/UI'
 import ChatPanel from '../components/ChatPanel'
 import BriefCard from '../components/BriefCard'
+import ToneDashboard from '../components/ToneDashboard'
 import { ArrowLeft, FileText, Zap, AlertTriangle, Clock3, RefreshCw, CheckCircle2, ListTodo, ChevronUp } from 'lucide-react'
 
 export default function MeetingDetail() {
@@ -225,20 +226,7 @@ export default function MeetingDetail() {
 
       {meeting.status === 'ready' && (
         <div className="mt-8 space-y-8">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/8 bg-white/5 p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Decisions</p>
-              <p className="mt-3 text-3xl font-semibold text-white">{decisions.length}</p>
-            </div>
-            <div className="rounded-2xl border border-white/8 bg-white/5 p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Tasks</p>
-              <p className="mt-3 text-3xl font-semibold text-white">{actions.length}</p>
-            </div>
-            <div className="rounded-2xl border border-white/8 bg-white/5 p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Conflict checks</p>
-              <p className="mt-3 text-3xl font-semibold text-white">{conflicts.length}</p>
-            </div>
-          </div>
+          <ToneDashboard meeting={meeting} />
 
           <div className="space-y-8">
             <div className="rounded-3xl border border-indigo-400/15 bg-gradient-to-b from-indigo-500/10 via-indigo-500/[0.04] to-transparent p-4 md:p-5">

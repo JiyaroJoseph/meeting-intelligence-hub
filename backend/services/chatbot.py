@@ -14,6 +14,85 @@ def _tokenize(text: str) -> list[str]:
     return re.findall(r"[a-zA-Z]{3,}", (text or "").lower())
 
 
+def _split_transcript_lines(full_text: str) -> list[dict]:
+    lines = []
+    for raw in [ln.strip() for ln in (full_text or "").splitlines() if ln.strip()]:
+        speaker, txt = _extract_speaker_and_text(raw)
+        if not txt:
+            continue
+        lines.append({"raw": raw, "speaker": speaker or "Unknown", "text": txt})
+    return lines
+
+
+def _line_score(question_low: str, question_tokens: set[str], speaker: str, text: str) -> int:
+    low = (text or "").lower()
+    score = len(question_tokens & set(_tokenize(low)))
+
+    if speaker and speaker.lower() in question_low:
+        score += 4
+    if any(term in question_low for term in ["why", "reason", "because", "how come"]):
+        if any(term in low for term in ["because", "since", "so that", "therefore", "risk", "concern", "budget", "sponsorship", "delay", "availability", "unclear"]):
+            score += 3
+    if any(term in question_low for term in ["who", "owner", "responsible", "assigned"]):
+        if any(term in low for term in ["will", "i'll", "i will", "reach out", "check", "finalize", "prepare", "book", "own", "owner"]):
+            score += 3
+    if any(term in question_low for term in ["decision", "decide", "agreed", "what did we decide"]):
+        if any(term in low for term in ["agreed", "confirmed", "decide", "final recap", "proceed", "we'll", "let's", "sounds right", "take priority", "backup"]):
+            score += 3
+    if any(term in question_low for term in ["concern", "risk", "problem", "issue"]):
+        if any(term in low for term in ["concern", "risk", "issue", "problem", "might", "could", "unclear", "can't", "cannot", "exceed"]):
+            score += 4
+    if any(term in question_low for term in ["deadline", "when", "by when", "due"]):
+        if any(term in low for term in ["monday", "tuesday", "wednesday", "thursday", "friday", "eod", "noon", "am", "pm", "by "]):
+            score += 3
+    if low.startswith((speaker or "").lower()):
+        score += 1
+
+    return score
+
+
+def _build_candidate_sources(transcripts: list[dict], question: str, limit: int = 10) -> list[dict]:
+    question_low = (question or "").lower()
+    question_tokens = set(_tokenize(question))
+    candidates = []
+
+    for transcript in transcripts:
+        meeting_name = transcript.get("name", "Meeting")
+        lines = _split_transcript_lines(transcript.get("full_text", ""))
+        for idx, item in enumerate(lines):
+            score = _line_score(question_low, question_tokens, item["speaker"], item["text"])
+            if score <= 0:
+                continue
+
+            start = max(0, idx - 1)
+            end = min(len(lines), idx + 2)
+            context_lines = []
+            for context_item in lines[start:end]:
+                context_lines.append(f"{context_item['speaker']}: {context_item['text']}")
+
+            candidates.append(
+                {
+                    "meeting": meeting_name,
+                    "speaker": item["speaker"],
+                    "excerpt": item["text"][:320],
+                    "context": " | ".join(context_lines)[:700],
+                    "score": score,
+                }
+            )
+
+    deduped = []
+    seen = set()
+    for candidate in sorted(candidates, key=lambda x: (x["score"], len(x["excerpt"])), reverse=True):
+        key = (candidate["meeting"], candidate["speaker"], candidate["excerpt"])
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(candidate)
+        if len(deduped) >= limit:
+            break
+    return deduped
+
+
 def _extract_speaker_and_text(line: str) -> tuple[str | None, str]:
     m = re.match(r"^(?:\[[^\]]+\]\s*)?([A-Za-z][A-Za-z\s]{0,30}):\s*(.+)$", (line or "").strip())
     if not m:
@@ -164,24 +243,8 @@ def _local_answer(question: str, transcripts: list[dict]) -> dict:
     if intent_res:
         return intent_res
 
-    best = None
-    best_score = 0
-
-    for t in transcripts:
-        lines = [ln.strip() for ln in (t.get("full_text") or "").splitlines() if ln.strip()]
-        for ln in lines:
-            speaker, txt = _extract_speaker_and_text(ln)
-            tokens = set(_tokenize(txt))
-            score = len(q_tokens & tokens)
-            if score > best_score:
-                best_score = score
-                best = {
-                    "meeting": t.get("name", "Meeting"),
-                    "speaker": speaker or "Unknown",
-                    "excerpt": txt[:260],
-                }
-
-    if not best or best_score == 0:
+    candidates = _build_candidate_sources(transcripts, question)
+    if not candidates:
         first_citation = None
         for t in transcripts:
             lines = [ln.strip() for ln in (t.get("full_text") or "").splitlines() if ln.strip()]
@@ -210,29 +273,39 @@ def _local_answer(question: str, transcripts: list[dict]) -> dict:
             "found_in_transcripts": False,
         }
 
+    top = candidates[:3]
+    answer_bits = [f"{c['meeting']} · {c['speaker']}: {c['excerpt']}" for c in top]
     return {
-        "answer": f"Based on the transcript, the most relevant point is: {best['excerpt']}",
-        "citations": [best],
-        "confidence": "Medium" if best_score >= 2 else "Low",
+        "answer": "Based on the transcripts, the most relevant points are: " + " ".join([f"- {bit}" for bit in answer_bits]),
+        "citations": [{"meeting": c["meeting"], "speaker": c["speaker"], "excerpt": c["excerpt"]} for c in top],
+        "confidence": "Medium" if top[0]["score"] >= 3 else "Low",
         "found_in_transcripts": True,
     }
 
 def query_transcripts(question: str, transcripts: list[dict]) -> dict:
+    sources = _build_candidate_sources(transcripts, question, limit=10)
+
     context_parts = []
-    for i, t in enumerate(transcripts):
-        context_parts.append(f"--- MISSION FILE {i+1}: {t['name']} ---\n{t['full_text'][:6000]}")
+    for i, source in enumerate(sources):
+        context_parts.append(
+            f"[SOURCE {i+1}]\nMeeting: {source['meeting']}\nSpeaker: {source['speaker']}\nExcerpt: {source['excerpt']}\nContext: {source['context']}"
+        )
     context = "\n\n".join(context_parts)
 
-    prompt = f"""You are an intelligence analyst with access to the following meeting transcripts.
-Answer the user's question accurately using ONLY the provided transcript content.
-Always cite your source — mention which meeting file and reference the relevant speaker/segment.
+    if not context:
+        return _local_answer(question, transcripts)
 
-TRANSCRIPTS:
+    prompt = f"""You are an analyst answering a question across multiple meeting transcripts.
+Use ONLY the provided source excerpts. Synthesize across meetings when needed. If the question asks "why", explain the reasoning using the evidence in the excerpts. If the question asks for concerns, identify the real concerns raised by the correct speaker. If the question asks for decisions, only state decisions that are explicitly supported by the excerpts.
+
+Always cite your source in the answer using the meeting name and speaker from the excerpts. Prefer 2 to 4 citations when multiple sources support the answer. Do not invent facts that are not in the excerpts.
+
+SOURCE EXCERPTS:
 {context}
 
 USER QUESTION: {question}
 
-Respond in this JSON format (no markdown):
+Respond in this JSON format only (no markdown):
 {{
   "answer": "Your detailed answer here",
   "citations": [
@@ -242,7 +315,7 @@ Respond in this JSON format (no markdown):
   "found_in_transcripts": true
 }}
 
-If the answer is not found in the transcripts, set found_in_transcripts to false."""
+If the answer is not supported by the excerpts, set found_in_transcripts to false and explain the limitation briefly."""
     try:
         if not client:
             raise RuntimeError("ANTHROPIC_API_KEY is not configured.")
