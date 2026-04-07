@@ -25,7 +25,7 @@ DEBRIEF turns meeting transcripts into a clean executive brief. It extracts deci
 - Storage: Local file-based storage in the backend
 
 ## Demo Video
-
+[![Watch Demo](https://drive.google.com/thumbnail?id=1EmO7F68i2RzBZF7B-gN5k4CFQ1kkjwqK)](https://drive.google.com/file/d/1EmO7F68i2RzBZF7B-gN5k4CFQ1kkjwqK/view)
 
 ## Setup Instructions
 
