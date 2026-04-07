@@ -64,7 +64,7 @@ npm run dev
 If you want the AI-powered extraction to use an Anthropic API key, create a `.env` file in the `backend` folder and add your key there.
 
 
-### Recommended deployment setup
+## Recommended deployment setup
 Because the frontend and backend are separate apps, deploy them separately and connect them with an environment variable.
 
 1. Deploy the backend first
@@ -87,6 +87,6 @@ Because the frontend and backend are separate apps, deploy them separately and c
 	- Upload a transcript and confirm it reaches the backend.
 	- Check that transcript analysis, chat, CSV export, and PDF export all work.
 
-### Live Links
-Frontend- https://meeting-intelligence-hub-jiyaros-projects.vercel.app/
-Backend- https://meeting-intelligence-hub-0xwn.onrender.com
+## Live Links
+- Frontend- https://meeting-intelligence-hub-jiyaros-projects.vercel.app/
+- Backend- https://meeting-intelligence-hub-0xwn.onrender.com
