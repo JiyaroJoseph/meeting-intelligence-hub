@@ -24,10 +24,6 @@ DEBRIEF turns meeting transcripts into a clean executive brief. It extracts deci
 - APIs and tools: Anthropic API, FastAPI CORS, python-dotenv, python-multipart
 - Storage: Local file-based storage in the backend
 
-## Live Links
-Frontend-
-Backend- https://meeting-intelligence-hub-0xwn.onrender.com
-
 ## Demo Video
 
 
@@ -67,7 +63,6 @@ npm run dev
 ### 5. Optional environment setup
 If you want the AI-powered extraction to use an Anthropic API key, create a `.env` file in the `backend` folder and add your key there.
 
-## Hosted Link
 
 ### Recommended deployment setup
 Because the frontend and backend are separate apps, deploy them separately and connect them with an environment variable.
@@ -92,5 +87,6 @@ Because the frontend and backend are separate apps, deploy them separately and c
 	- Upload a transcript and confirm it reaches the backend.
 	- Check that transcript analysis, chat, CSV export, and PDF export all work.
 
-### Live URL
-Paste the deployed application link here once the frontend is live.
+### Live Links
+Frontend- https://meeting-intelligence-hub-jiyaros-projects.vercel.app/
+Backend- https://meeting-intelligence-hub-0xwn.onrender.com
