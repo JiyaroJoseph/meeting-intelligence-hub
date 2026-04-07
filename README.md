@@ -9,6 +9,13 @@ Teams often finish meetings with decisions, action items, and risks buried insid
 ## The Solution
 DEBRIEF turns meeting transcripts into a clean executive brief. It extracts decisions, action items, conflict checks, key points, and risk flags, then presents them in a focused web dashboard and a professional PDF export so the most important information is easy to review and share.
 
+## Core Features
+- Multi-transcript upload (.txt, .vtt) with validation
+- Decision and action-item extraction with owner/deadline detection
+- Cross-meeting AI chat with source citations
+- Meeting vibe dashboard (timeline + speaker sentiment + flagged moments)
+- PDF and CSV export
+
 ## Tech Stack
 - Programming languages: Python, JavaScript
 - Frontend frameworks and tools: React, Vite, Tailwind CSS, Axios, Lucide React, React Router
@@ -16,6 +23,13 @@ DEBRIEF turns meeting transcripts into a clean executive brief. It extracts deci
 - PDF generation: ReportLab
 - APIs and tools: Anthropic API, FastAPI CORS, python-dotenv, python-multipart
 - Storage: Local file-based storage in the backend
+
+## Live Links
+Frontend-
+Backend- https://meeting-intelligence-hub-0xwn.onrender.com
+
+## Demo Video
+
 
 ## Setup Instructions
 
