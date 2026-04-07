@@ -4,7 +4,7 @@ import { getMeeting, getBrief, getConflicts, exportCSV, exportPDF, reanalyzeMeet
 import { StatusBadge, PriorityBadge, SectionHeader, Spinner, Skeleton } from '../components/UI'
 import ChatPanel from '../components/ChatPanel'
 import BriefCard from '../components/BriefCard'
-import { ArrowLeft, FileText, Zap, AlertTriangle, Clock3, RefreshCw } from 'lucide-react'
+import { ArrowLeft, FileText, Zap, AlertTriangle, Clock3, RefreshCw, CheckCircle2, ListTodo, ChevronUp } from 'lucide-react'
 
 export default function MeetingDetail() {
   const { id } = useParams()
@@ -16,6 +16,7 @@ export default function MeetingDetail() {
   const [conflicts, setConflicts] = useState([])
   const [retrying, setRetrying] = useState(false)
   const [retryError, setRetryError] = useState(null)
+  const [showBackToTop, setShowBackToTop] = useState(false)
 
   const fetchMeeting = useCallback(async () => {
     try {
@@ -44,6 +45,17 @@ export default function MeetingDetail() {
     const interval = setInterval(fetchMeeting, 3000)
     return () => clearInterval(interval)
   }, [fetchMeeting, fetchConflicts])
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 260)
+    onScroll()
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleBrief = async () => {
     setShowBrief(true)
@@ -128,6 +140,26 @@ export default function MeetingDetail() {
     return filtered
   }
 
+  const sanitizeTaskText = (text) => {
+    const raw = String(text || '').trim()
+    if (!raw) return ''
+
+    const withoutLead = raw.replace(
+      /^(?:i|i'm|i am|i'll|i will|i'd|i would|we|we're|we are|we'll|we will|we'd|we would|he|he's|he is|he'll|he will|she|she's|she is|she'll|she will|they|they're|they are|they'll|they will)\s+/i,
+      ''
+    )
+
+    const cleaned = withoutLead.replace(/^(?:will|can|could|should|must|need to|have to)\s+/i, '')
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+  }
+
+  const sanitizeOwner = (owner) => {
+    const value = String(owner || '').trim()
+    if (!value) return 'Unassigned'
+    if (/^(?:i|me|we|us|he|she|they)$/i.test(value)) return 'Unassigned'
+    return value
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 animate-fade-in">
       <Link to="/" className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white">
@@ -156,6 +188,9 @@ export default function MeetingDetail() {
             </button>
             <button onClick={() => exportPDF(id)} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-colors hover:border-indigo-400/25 hover:text-white">
               <FileText size={12} /> PDF
+            </button>
+            <button onClick={() => exportCSV(id)} className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-100 transition-all hover:-translate-y-0.5 hover:border-cyan-300/45 hover:bg-cyan-400/15 hover:text-white">
+              <FileText size={12} /> CSV
             </button>
           </div>
         )}
@@ -206,8 +241,8 @@ export default function MeetingDetail() {
           </div>
 
           <div className="space-y-8">
-            <div>
-              <SectionHeader label="Decisions" count={decisions.length} />
+            <div className="rounded-3xl border border-indigo-400/15 bg-gradient-to-b from-indigo-500/10 via-indigo-500/[0.04] to-transparent p-4 md:p-5">
+              <SectionHeader icon={<CheckCircle2 size={14} />} label="Decision Board" count={decisions.length} />
               {decisions.length === 0
                 ? <p className="text-sm text-slate-400">No decisions extracted.</p>
                 : (
@@ -215,8 +250,9 @@ export default function MeetingDetail() {
                     {decisions.map(d => (
                       <div
                         key={d.id}
-                        className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-400/35 hover:bg-white/[0.07] hover:shadow-[0_18px_40px_rgba(37,99,235,0.12)]"
+                        className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-400/35 hover:bg-white/[0.07] hover:shadow-[0_18px_40px_rgba(37,99,235,0.12)]"
                       >
+                        <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-indigo-500/10 blur-2xl transition-opacity group-hover:opacity-90" />
                         <div className="flex items-start gap-3">
                           <span className="inline-flex shrink-0 items-center rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[11px] font-medium text-indigo-200">#{d.id}</span>
                           <div className="flex-1">
@@ -249,26 +285,26 @@ export default function MeetingDetail() {
                 )}
             </div>
 
-            <div>
-              <SectionHeader label="Tasks" count={actions.length} />
+            <div className="rounded-3xl border border-cyan-400/15 bg-gradient-to-b from-cyan-500/10 via-cyan-500/[0.04] to-transparent p-4 md:p-5">
+              <SectionHeader icon={<ListTodo size={14} />} label="Action Tracker" count={actions.length} />
               {actions.length === 0
                 ? <p className="text-sm text-slate-400">No tasks extracted.</p>
                 : (
-                  <div className="overflow-x-auto rounded-2xl border border-white/8 bg-white/5">
+                  <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-white/8">
+                        <tr className="border-b border-white/10 bg-white/[0.03]">
                           {['#', 'Task', 'Owner', 'Deadline', 'Priority'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-xs font-medium tracking-[0.18em] text-slate-400">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-xs font-medium tracking-[0.18em] text-slate-300">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {actions.map(a => (
-                          <tr key={a.id} className="border-b border-white/5 transition-colors hover:bg-white/[0.03]">
+                          <tr key={a.id} className="border-b border-white/5 transition-colors hover:bg-cyan-500/[0.06]">
                             <td className="px-4 py-4 text-sm text-indigo-300">#{a.id}</td>
-                            <td className="px-4 py-4 text-sm text-white">{a.task}</td>
-                            <td className="px-4 py-4 text-sm text-slate-400">{a.owner}</td>
+                            <td className="px-4 py-4 text-sm font-medium text-white">{sanitizeTaskText(a.task)}</td>
+                            <td className="px-4 py-4 text-sm text-slate-300">{sanitizeOwner(a.owner)}</td>
                             <td className="px-4 py-4 text-sm text-slate-400">{a.deadline}</td>
                             <td className="px-4 py-4"><PriorityBadge priority={a.priority} /></td>
                           </tr>
@@ -332,6 +368,17 @@ export default function MeetingDetail() {
       )}
 
       {showBrief && <BriefCard brief={brief} loading={briefLoading} onClose={() => setShowBrief(false)} />}
+
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="group fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-full border border-indigo-300/35 bg-gradient-to-r from-indigo-500/85 via-blue-500/80 to-cyan-500/85 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(56,189,248,0.35)] ring-1 ring-white/20 backdrop-blur-md transition-all hover:-translate-y-1 hover:scale-[1.03] hover:shadow-[0_18px_42px_rgba(99,102,241,0.45)]"
+        >
+          <ChevronUp size={15} className="transition-transform group-hover:-translate-y-0.5" />
+          Move to top
+        </button>
+      )}
     </div>
   )
 }

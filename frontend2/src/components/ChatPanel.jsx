@@ -11,7 +11,10 @@ export default function ChatPanel({ meetingId }) {
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => {
+    if (messages.length === 0) return
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   useEffect(() => {
     if (typingId === null) return
