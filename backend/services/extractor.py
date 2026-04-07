@@ -337,38 +337,48 @@ def _call_llm(prompt: str, max_tokens: int) -> str:
     return message.content[0].text.strip()
 
 def extract_intel(full_text: str, meeting_name: str) -> dict:
-    prompt = f"""You are an intelligence analyst. Analyze this meeting transcript and extract structured information.
+    prompt = f"""You are a precision information extraction system. Extract only what is explicitly supported by the transcript and nothing else.
 
-STRICT DEFINITIONS:
-- "decisions" = only outcomes the team clearly agreed on (consensus, final direction, approved choice).
-- "action_items" = only tasks assigned to a specific owner. Do not include concerns, questions, or general statements.
-- If a sentence is uncertain (might, maybe, concern, risk), do not classify it as a decision or task unless there is explicit assignment/consensus.
+STRICT RULES:
+1. Decisions: Include a decision only if the transcript explicitly shows agreement, confirmation, conclusion, approval, or final recap. Valid signals include phrases such as "agreed", "yes", "confirmed", "let's do", "we'll go with", "that sounds right", "that sounds safer", "proceed", "prioritize", or a final recap that states the chosen outcome. Do NOT treat questions, concerns, suggestions, observations, or uncertainty as decisions.
+2. Action items: Include an action item only when a specific person explicitly commits or is directly assigned a task. Valid signals include "I will", "I'll", or a direct assignment with a verb and a named owner. Extract the exact owner name, the exact task description, and the exact deadline if it is stated. If no deadline is stated, use exactly "Not specified". Do NOT invent owners, tasks, or deadlines.
+3. No hallucination: Every decision and every action item must be directly traceable to a specific line in the transcript. If you cannot point to an exact line that supports it, exclude it.
+4. Quality over quantity: Return fewer items rather than uncertain items. Prefer 3 accurate decisions over 8 weak ones. Prefer 3 accurate tasks over padded results.
+5. Do not classify concerns, risks, questions, alternatives, or hypothetical statements as decisions or tasks unless there is explicit agreement or explicit assignment.
+6. Keep wording close to the transcript. Do not paraphrase into new meaning. Do not merge unrelated statements.
+7. Output JSON only. No markdown, no commentary, no explanation.
 
 TRANSCRIPT ({meeting_name}):
 {full_text[:12000]}
 
-Return ONLY valid JSON (no markdown, no explanation) in this exact format:
+Return strictly valid JSON matching this schema and nothing else:
 {{
-  "decisions": [
+    "decisions": [
         {{
             "id": 1,
-            "decision": "Only a clearly agreed decision",
+            "decision": "A decision that is explicitly agreed or concluded in the transcript",
             "context": "Brief context/reason",
             "rationale": "Why the team made this choice",
             "confidence": "High|Medium|Low",
             "stakeholders": ["Person A"],
             "dissenters": ["Person B"]
         }}
-  ],
-  "action_items": [
-        {{"id": 1, "task": "Concrete assigned task", "owner": "Specific person name", "deadline": "By when (or 'Not specified')", "priority": "High|Medium|Low"}}
-  ],
-  "brief": {{
-    "headline": "One punchy sentence summarizing the meeting outcome",
-    "key_points": ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5"],
-    "risk_flags": ["Any risk or concern flagged"],
-    "overall_outcome": "Positive|Neutral|Concerning"
-  }}
+    ],
+    "action_items": [
+        {{
+            "id": 1,
+            "task": "A concrete assigned task",
+            "owner": "Specific person name",
+            "deadline": "By when (or 'Not specified')",
+            "priority": "High|Medium|Low"
+        }}
+    ],
+    "brief": {{
+        "headline": "One punchy sentence summarizing the meeting outcome",
+        "key_points": ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5"],
+        "risk_flags": ["Any risk or concern flagged"],
+        "overall_outcome": "Positive|Neutral|Concerning"
+    }}
 }}"""
     try:
         raw = _strip_code_fence(_call_llm(prompt, 3000))
