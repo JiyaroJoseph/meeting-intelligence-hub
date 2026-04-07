@@ -1,6 +1,7 @@
 import json
 import re
 import os
+from typing import List, Tuple
 from dotenv import load_dotenv
 
 import anthropic
@@ -18,94 +19,203 @@ def _extract_line_parts(line: str):
     return m.group(1).strip(), m.group(2).strip()
 
 
-def _fallback_intel(full_text: str, meeting_name: str) -> dict:
+def _split_sentences(text: str) -> List[str]:
+    return [s.strip() for s in re.split(r"(?<=[.!?])\s+", (text or "").strip()) if s.strip()]
+
+
+def _extract_deadline(text: str) -> str:
+    raw = (text or "")
+    m = re.search(
+        r"\bby\s+((?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)(?:\s+(?:morning|afternoon|evening|noon|eod))?)\b",
+        raw,
+        flags=re.I,
+    )
+    if m:
+        return f"By {m.group(1).strip().title()}"
+
+    m = re.search(r"\b(tomorrow(?:\s+\d{1,2}(?::\d{2})?\s*(?:am|pm))?)\b", raw, flags=re.I)
+    if m:
+        return m.group(1).strip().title()
+
+    m = re.search(r"\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|eod|end of day|noon)\b", raw, flags=re.I)
+    if m:
+        return m.group(1).strip().upper() if m.group(1).lower() in {"eod", "end of day"} else m.group(1).strip()
+
+    return "Not specified"
+
+
+def _clean_task_text(text: str) -> str:
+    t = (text or "").strip()
+    t = re.sub(r"^(?:i|we|he|she|they)\s+(?:will|shall|can|could|would|should)\s+", "", t, flags=re.I)
+    t = re.sub(r"^(?:i|we|he|she|they)['’]ll\s+", "", t, flags=re.I)
+    t = re.sub(r"\s+", " ", t).strip(" .")
+    if not t:
+        return ""
+    return t[0].upper() + t[1:]
+
+
+def _looks_like_task_assignment(sentence: str) -> bool:
+    low = (sentence or "").lower()
+    if "?" in low:
+        return False
+    if any(k in low for k in ["concern", "risk", "might", "maybe", "if "]):
+        return False
+    has_commitment = bool(
+        re.search(
+            r"\b(i\s+will|i['’]ll|we\s+will|we['’]ll|[a-z][a-z\s]{1,30}\s+will|action item|follow up|reach out|check|finalize|prepare|deploy|monitor|set up)\b",
+            low,
+        )
+    )
+    return has_commitment
+
+
+def _extract_task(sentence: str, speaker: str | None) -> Tuple[str, str, str]:
+    s = (sentence or "").strip()
+    owner = speaker or "Unassigned"
+    deadline = _extract_deadline(s)
+
+    named_owner = re.match(r"^([A-Za-z][A-Za-z\s]{1,30})\s+(?:will|shall|can)\s+(.+)$", s)
+    if named_owner:
+        owner = named_owner.group(1).strip()
+        task = _clean_task_text(named_owner.group(2))
+        return task, owner, deadline
+
+    fp = re.match(r"^(?:I\s+will|I['’]ll|We\s+will|We['’]ll)\s+(.+)$", s, flags=re.I)
+    if fp:
+        task = _clean_task_text(fp.group(1))
+        return task, owner, deadline
+
+    generic = _clean_task_text(s)
+    return generic, owner, deadline
+
+
+def _looks_like_decision(sentence: str) -> bool:
+    low = (sentence or "").lower().strip()
+    if not low:
+        return False
+    if low.endswith("?"):
+        return False
+    if _looks_like_task_assignment(sentence):
+        return False
+    if any(k in low for k in ["concern", "risk", "blocked", "might", "budget is still unclear"]):
+        return False
+    return any(
+        k in low
+        for k in [
+            "final recap",
+            "we proceed",
+            "we decided",
+            "decision",
+            "agreed",
+            "yes, good idea",
+            "good idea",
+            "sounds safer",
+            "should take priority",
+            "need to prioritize",
+            "prioritize",
+        ]
+    )
+
+
+def _decision_confidence(text: str) -> str:
+    low = (text or "").lower()
+    if any(k in low for k in ["final recap", "we proceed", "we decided", "agreed"]):
+        return "High"
+    if any(k in low for k in ["should", "need to", "prioritize", "sounds safer", "good idea"]):
+        return "Medium"
+    return "Low"
+
+
+def _build_heuristic_intel(full_text: str) -> tuple[list, list, list]:
     lines = [ln.strip() for ln in (full_text or "").splitlines() if ln.strip()]
-    sentences = []
     speakers = set()
+    sentence_items = []
     for ln in lines:
         speaker, text = _extract_line_parts(ln)
         if speaker:
             speakers.add(speaker)
-        if text:
-            for s in [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]:
-                sentences.append({"speaker": speaker, "text": s})
-
-    decision_tokens = ("decid", "agree", "approve", "launch", "ship", "delay", "defer", "postpone", "reject", "cancel", "go with", "move forward")
-    action_tokens = ("will", "action", "owner", "deadline", "next step", "follow up", "by ", "todo", "task")
-
-    def decision_confidence(text: str) -> str:
-        t = (text or "").lower()
-        if any(k in t for k in ["final decision", "we decided", "decision.", "approved", "agreed", "delay", "launch"]):
-            return "High"
-        if any(k in t for k in ["might", "maybe", "could", "should", "consider"]):
-            return "Low"
-        if len((text or "").split()) < 4:
-            return "Low"
-        return "Medium"
+        for s in _split_sentences(text):
+            sentence_items.append({"speaker": speaker, "text": s})
 
     decisions = []
-    for item in sentences:
-        s = item["text"]
+    actions = []
+
+    for idx, item in enumerate(sentence_items):
         speaker = item.get("speaker")
-        low = s.lower()
-        if any(t in low for t in decision_tokens):
-            mentioned = [sp for sp in sorted(list(speakers)) if re.search(rf"\b{re.escape(sp)}\b", s, flags=re.I)]
+        text = item.get("text", "")
+        low = text.lower()
+
+        if _looks_like_decision(text):
+            chosen = text
+            if re.fullmatch(r"(?:agreed\.?|yes\.?|good idea\.?|that sounds safer\.?)", low.strip(), flags=re.I):
+                prev = sentence_items[idx - 1]["text"] if idx > 0 else ""
+                if prev and not prev.endswith("?"):
+                    chosen = prev
+            mentioned = [sp for sp in sorted(list(speakers)) if re.search(rf"\b{re.escape(sp)}\b", chosen, flags=re.I)]
             stakeholders = mentioned[:4]
-            if not stakeholders and speaker:
-                stakeholders = [speaker]
-            decisions.append(
-                {
-                    "id": len(decisions) + 1,
-                    "decision": s[:220],
-                    "context": "",
-                    "rationale": "",
-                    "confidence": decision_confidence(s),
-                    "stakeholders": stakeholders,
-                    "dissenters": [],
-                }
-            )
-        if len(decisions) >= 6:
-            break
+            if speaker and speaker not in stakeholders:
+                stakeholders.append(speaker)
+            if not any((d.get("decision") or "").lower() == chosen.lower() for d in decisions):
+                decisions.append(
+                    {
+                        "id": len(decisions) + 1,
+                        "decision": chosen[:220],
+                        "context": "",
+                        "rationale": "",
+                        "confidence": _decision_confidence(chosen),
+                        "stakeholders": stakeholders,
+                        "dissenters": [],
+                    }
+                )
 
-    action_items = []
-    for item in sentences:
-        s = item["text"]
-        speaker = item.get("speaker")
-        low = s.lower()
-        if any(t in low for t in action_tokens):
-            cleaned_task = re.sub(r"^(?:Action item\.|Action item:?)\s*", "", s, flags=re.I).strip()
-            if not cleaned_task:
+        if _looks_like_task_assignment(text):
+            task_text, owner, deadline = _extract_task(text, speaker)
+            if owner == "Unassigned" or not task_text:
                 continue
-            owner = speaker or "Unassigned"
-            if owner == "Unknown":
-                owner = "Unassigned"
-            m = re.search(r"\b([A-Za-z][A-Za-z\s]{0,30})\s+owns?\b", s)
-            if m:
-                owner = m.group(1).strip()
-            elif re.match(r"^I\s+(?:will|own|owns|am|’m|m)\b", cleaned_task, flags=re.I) and speaker:
-                owner = speaker
-            action_items.append(
-                {
-                    "id": len(action_items) + 1,
-                    "task": cleaned_task[:220],
-                    "owner": owner,
-                    "deadline": "Not specified",
-                    "priority": "Medium",
-                }
-            )
-        if len(action_items) >= 8:
+            if len(task_text.split()) < 3:
+                continue
+            if not any((a.get("task") or "").lower() == task_text.lower() for a in actions):
+                actions.append(
+                    {
+                        "id": len(actions) + 1,
+                        "task": task_text[:220],
+                        "owner": owner,
+                        "deadline": deadline,
+                        "priority": "Medium",
+                    }
+                )
+
+        if len(decisions) >= 6 and len(actions) >= 8:
             break
 
-    if not decisions and sentences:
-        first_speaker = sentences[0].get("speaker")
+    risks = [
+        i["text"][:160]
+        for i in sentence_items
+        if any(k in i["text"].lower() for k in ["risk", "concern", "blocked", "delay", "might exceed", "fallback"])
+    ][:3]
+
+    return decisions[:6], actions[:8], risks
+
+
+def _fallback_intel(full_text: str, meeting_name: str) -> dict:
+    decisions, action_items, risk_flags = _build_heuristic_intel(full_text)
+
+    lines = [ln.strip() for ln in (full_text or "").splitlines() if ln.strip()]
+    first_sentence = ""
+    if lines:
+        _, txt = _extract_line_parts(lines[0])
+        split = _split_sentences(txt)
+        first_sentence = split[0] if split else txt
+
+    if not decisions and first_sentence:
         decisions = [
             {
                 "id": 1,
-                "decision": sentences[0]["text"][:220],
+                "decision": first_sentence[:220],
                 "context": "",
                 "rationale": "",
                 "confidence": "Low",
-                "stakeholders": [first_speaker] if first_speaker else [],
+                "stakeholders": [],
                 "dissenters": [],
             }
         ]
@@ -114,7 +224,7 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
     for d in decisions[:3]:
         if d.get("decision"):
             key_points.append(d["decision"][:160])
-    for a in action_items[:2]:
+    for a in action_items[:3]:
         task = (a.get("task") or "").strip()
         owner = (a.get("owner") or "").strip()
         if task:
@@ -133,10 +243,84 @@ def _fallback_intel(full_text: str, meeting_name: str) -> dict:
         "brief": {
             "headline": headline,
             "key_points": key_points,
-            "risk_flags": [s["text"][:160] for s in sentences if any(k in s["text"].lower() for k in ["risk", "block", "delay", "concern"] )][:3],
+            "risk_flags": risk_flags,
             "overall_outcome": "Neutral",
         },
     }
+
+
+def _normalize_intel_shape(intel: dict) -> dict:
+    if not isinstance(intel, dict):
+        return {"decisions": [], "action_items": [], "brief": {"headline": "Meeting summary", "key_points": [], "risk_flags": [], "overall_outcome": "Neutral"}}
+    intel.setdefault("decisions", [])
+    intel.setdefault("action_items", [])
+    intel.setdefault("brief", {})
+    intel["brief"].setdefault("headline", "Meeting summary")
+    intel["brief"].setdefault("key_points", [])
+    intel["brief"].setdefault("risk_flags", [])
+    intel["brief"].setdefault("overall_outcome", "Neutral")
+    return intel
+
+
+def _refine_extracted_intel(intel: dict, full_text: str) -> dict:
+    intel = _normalize_intel_shape(intel)
+    h_decisions, h_actions, h_risks = _build_heuristic_intel(full_text)
+
+    cleaned_decisions = []
+    for d in intel.get("decisions", []):
+        text = (d.get("decision") or "").strip()
+        if not text or not _looks_like_decision(text):
+            continue
+        if any((x.get("decision") or "").lower() == text.lower() for x in cleaned_decisions):
+            continue
+        cleaned_decisions.append(
+            {
+                "id": len(cleaned_decisions) + 1,
+                "decision": text[:220],
+                "context": (d.get("context") or "")[:220],
+                "rationale": (d.get("rationale") or "")[:220],
+                "confidence": d.get("confidence") if d.get("confidence") in {"High", "Medium", "Low"} else _decision_confidence(text),
+                "stakeholders": d.get("stakeholders") if isinstance(d.get("stakeholders"), list) else [],
+                "dissenters": d.get("dissenters") if isinstance(d.get("dissenters"), list) else [],
+            }
+        )
+
+    for d in h_decisions:
+        if len(cleaned_decisions) >= 6:
+            break
+        if not any((x.get("decision") or "").lower() == (d.get("decision") or "").lower() for x in cleaned_decisions):
+            cleaned_decisions.append({**d, "id": len(cleaned_decisions) + 1})
+
+    cleaned_actions = []
+    for a in intel.get("action_items", []):
+        task = _clean_task_text(a.get("task") or "")
+        owner = (a.get("owner") or "").strip()
+        if not task or not owner or owner.lower() in {"unknown", "unassigned", "i", "we", "he", "she", "they"}:
+            continue
+        if len(task.split()) < 3:
+            continue
+        if any((x.get("task") or "").lower() == task.lower() for x in cleaned_actions):
+            continue
+        cleaned_actions.append(
+            {
+                "id": len(cleaned_actions) + 1,
+                "task": task[:220],
+                "owner": owner,
+                "deadline": a.get("deadline") or "Not specified",
+                "priority": a.get("priority") if a.get("priority") in {"High", "Medium", "Low"} else "Medium",
+            }
+        )
+
+    for a in h_actions:
+        if len(cleaned_actions) >= 8:
+            break
+        if not any((x.get("task") or "").lower() == (a.get("task") or "").lower() for x in cleaned_actions):
+            cleaned_actions.append({**a, "id": len(cleaned_actions) + 1})
+
+    intel["decisions"] = cleaned_decisions[:6]
+    intel["action_items"] = cleaned_actions[:8]
+    intel["brief"]["risk_flags"] = (intel["brief"].get("risk_flags") or h_risks)[:3]
+    return intel
 
 
 def _strip_code_fence(text: str) -> str:
@@ -155,6 +339,11 @@ def _call_llm(prompt: str, max_tokens: int) -> str:
 def extract_intel(full_text: str, meeting_name: str) -> dict:
     prompt = f"""You are an intelligence analyst. Analyze this meeting transcript and extract structured information.
 
+STRICT DEFINITIONS:
+- "decisions" = only outcomes the team clearly agreed on (consensus, final direction, approved choice).
+- "action_items" = only tasks assigned to a specific owner. Do not include concerns, questions, or general statements.
+- If a sentence is uncertain (might, maybe, concern, risk), do not classify it as a decision or task unless there is explicit assignment/consensus.
+
 TRANSCRIPT ({meeting_name}):
 {full_text[:12000]}
 
@@ -163,7 +352,7 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
   "decisions": [
         {{
             "id": 1,
-            "decision": "Clear description of what was decided",
+            "decision": "Only a clearly agreed decision",
             "context": "Brief context/reason",
             "rationale": "Why the team made this choice",
             "confidence": "High|Medium|Low",
@@ -172,7 +361,7 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
         }}
   ],
   "action_items": [
-    {{"id": 1, "task": "What needs to be done", "owner": "Person responsible", "deadline": "By when (or 'Not specified')", "priority": "High|Medium|Low"}}
+        {{"id": 1, "task": "Concrete assigned task", "owner": "Specific person name", "deadline": "By when (or 'Not specified')", "priority": "High|Medium|Low"}}
   ],
   "brief": {{
     "headline": "One punchy sentence summarizing the meeting outcome",
@@ -188,7 +377,8 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
         return _fallback_intel(full_text, meeting_name)
 
     try:
-        return json.loads(raw)
+        parsed = json.loads(raw)
+        return _refine_extracted_intel(parsed, full_text)
     except Exception as e:
         print("JSON parsing failed:", e)
         print("Raw response:", raw[:500])
