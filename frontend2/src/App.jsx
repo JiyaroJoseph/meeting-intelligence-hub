@@ -1,5 +1,4 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { ArrowUpRight, ShieldCheck, Radar } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import Upload from './pages/Upload'
 import MeetingDetail from './pages/MeetingDetail'
@@ -29,35 +28,8 @@ export default function App() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/mission/:id" element={<MeetingDetail />} />
       </Routes>
-      <footer className="relative mt-20 overflow-hidden border-t border-cyan-400/15 bg-slate-950/70">
-        <div className="pointer-events-none absolute -left-24 top-0 h-44 w-44 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute right-0 top-10 h-52 w-52 rounded-full bg-indigo-500/10 blur-3xl" />
-
-        <div className="mx-auto max-w-7xl px-6 py-10">
-          <div className="grid gap-8 md:grid-cols-[1.35fr_auto] md:items-start md:justify-between">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-cyan-200">
-                <Radar size={12} />
-                Debrief Command Layer
-              </p>
-              <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">Secure intelligence for every meeting that matters.</h3>
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-200">
-                <ShieldCheck size={13} />
-                Encrypted workspace • traceable outputs
-              </div>
-            </div>
-
-            <Link to="/ask" className="inline-flex items-center gap-2 self-start rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(34,211,238,0.2)] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(99,102,241,0.3)]">
-              Open assistant
-              <ArrowUpRight size={14} />
-            </Link>
-          </div>
-
-          <div className="mt-8 flex flex-col gap-2 border-t border-white/6 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <p>{currentYear} Debrief. Meeting intelligence workspace.</p>
-            <p>Built for teams that need auditable decisions and fast execution.</p>
-          </div>
-        </div>
+      <footer className="mt-16 border-t border-white/6 bg-slate-950/65 px-6 py-4">
+        <p className="text-center text-xs text-slate-500">{currentYear} Debrief. Built for secure multi-meeting intelligence.</p>
       </footer>
     </div>
   )
