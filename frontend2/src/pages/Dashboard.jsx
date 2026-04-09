@@ -202,13 +202,12 @@ export default function Dashboard() {
                       <input
                         value={editingName}
                         onClick={(e) => {
-                          e.preventDefault()
                           e.stopPropagation()
                         }}
                         onChange={(e) => setEditingName(e.target.value)}
                         className="min-w-[240px] flex-1 rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-indigo-400/40"
                       />
-                      <button type="submit" disabled={actionLoadingId === m.id} className="inline-flex items-center gap-1 rounded-xl bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-400 disabled:opacity-50" onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
+                      <button type="submit" disabled={actionLoadingId === m.id} className="inline-flex items-center gap-1 rounded-xl bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-400 disabled:opacity-50" onClick={(e) => { e.stopPropagation() }}>
                         <Check size={14} /> Save
                       </button>
                       <button type="button" className="inline-flex items-center gap-1 rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-300 transition-colors hover:border-slate-500 hover:text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); cancelEdit() }}>
