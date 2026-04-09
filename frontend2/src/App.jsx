@@ -34,26 +34,16 @@ export default function App() {
         <div className="pointer-events-none absolute right-0 top-10 h-52 w-52 rounded-full bg-indigo-500/10 blur-3xl" />
 
         <div className="mx-auto max-w-7xl px-6 py-10">
-          <div className="grid gap-8 md:grid-cols-[1.35fr_1fr_auto] md:items-start">
+          <div className="grid gap-8 md:grid-cols-[1.35fr_auto] md:items-start md:justify-between">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-cyan-200">
                 <Radar size={12} />
                 Debrief Command Layer
               </p>
               <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">Secure intelligence for every meeting that matters.</h3>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">Debrief turns raw transcripts into decisions, action owners, and source-backed context your team can trust.</p>
               <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-200">
                 <ShieldCheck size={13} />
                 Encrypted workspace • traceable outputs
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Explore</p>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
-                <Link to="/" className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 transition-colors hover:border-cyan-300/30 hover:text-white">Dashboard</Link>
-                <Link to="/ask" className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 transition-colors hover:border-cyan-300/30 hover:text-white">Ask AI</Link>
-                <Link to="/upload" className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 transition-colors hover:border-cyan-300/30 hover:text-white">Upload</Link>
               </div>
             </div>
 
