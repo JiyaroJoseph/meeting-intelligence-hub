@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { getMeetings, deleteMeeting, renameMeeting } from '../api/client'
 import { StatusBadge, Spinner, Skeleton } from '../components/UI'
@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [actionLoadingId, setActionLoadingId] = useState(null)
   const [actionError, setActionError] = useState(null)
   const [query, setQuery] = useState('')
+  const nameInputRef = useRef(null)
 
   const fetchMeetings = async () => {
     try {
@@ -39,6 +40,13 @@ export default function Dashboard() {
     const interval = setInterval(fetchMeetings, 4000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    if (editingId && nameInputRef.current) {
+      nameInputRef.current.focus()
+      nameInputRef.current.select()
+    }
+  }, [editingId])
 
   const startEdit = (meeting) => {
     setActionError(null)
@@ -184,7 +192,7 @@ export default function Dashboard() {
           <div className="divide-y divide-white/5">
             {filteredMeetings.map(m => (
               <div key={m.id} className="group grid gap-4 px-5 py-5 transition-colors hover:bg-white/[0.03] md:grid-cols-[minmax(0,1fr)_200px]">
-                <Link to={`/mission/${m.id}`} className="min-w-0">
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-3">
                     <StatusBadge status={m.status} />
                     <span className="text-xs text-slate-500">#{m.id}</span>
@@ -200,6 +208,7 @@ export default function Dashboard() {
                       className="mt-3 flex flex-wrap items-center gap-2"
                     >
                       <input
+                        ref={nameInputRef}
                         value={editingName}
                         onClick={(e) => {
                           e.stopPropagation()
@@ -215,16 +224,16 @@ export default function Dashboard() {
                       </button>
                     </form>
                   ) : (
-                    <>
+                    <Link to={`/mission/${m.id}`} className="block">
                       <h3 className="mt-3 truncate text-lg font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-300">{m.name}</h3>
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-400">
                         <span>{m.word_count?.toLocaleString()} words</span>
                         <span>{m.speakers?.length} speakers</span>
                         <span>{m.format?.toUpperCase()}</span>
                       </div>
-                    </>
+                    </Link>
                   )}
-                </Link>
+                </div>
 
                 <div className="flex items-center justify-between gap-3 md:justify-end">
                   <div className="flex gap-6 text-right">
