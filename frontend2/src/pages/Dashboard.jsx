@@ -137,25 +137,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="mb-10 overflow-hidden rounded-[2rem] border border-cyan-400/15 bg-gradient-to-r from-indigo-500/12 via-white/[0.03] to-cyan-500/12 p-6 shadow-[0_24px_60px_rgba(2,6,23,0.22)]">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/10 text-cyan-200">
-              <MessageSquareMore size={18} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">Cross-meeting assistant</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Ask natural-language questions across every uploaded transcript.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Use one chatbot to compare decisions, trace owners, and reason over multiple meetings with source citations.</p>
-            </div>
-          </div>
-          <Link to="/ask" className="inline-flex items-center gap-2 self-start rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500 px-5 py-3 text-sm font-medium text-white shadow-[0_14px_34px_rgba(56,189,248,0.25)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(99,102,241,0.35)]">
-            Open chatbot
-            <ArrowRight size={14} />
-          </Link>
-        </div>
-      </div>
-
       {!loading && safeMeetings.length === 0 && (
         <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.04] p-16 text-center">
           <p className="text-sm font-medium text-slate-200">No transcripts yet</p>
@@ -273,6 +254,25 @@ export default function Dashboard() {
 
         </div>
       )}
+
+      <div className="mt-10 overflow-hidden rounded-[2rem] border border-cyan-400/15 bg-gradient-to-r from-indigo-500/12 via-white/[0.03] to-cyan-500/12 p-6 shadow-[0_24px_60px_rgba(2,6,23,0.22)]">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/10 text-cyan-200">
+              <MessageSquareMore size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">Cross-meeting assistant</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Ask natural-language questions across every uploaded transcript.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Use one chatbot to compare decisions, trace owners, and reason over multiple meetings with source citations.</p>
+            </div>
+          </div>
+          <Link to="/ask" className="inline-flex items-center gap-2 self-start rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500 px-5 py-3 text-sm font-medium text-white shadow-[0_14px_34px_rgba(56,189,248,0.25)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(99,102,241,0.35)]">
+            Open chatbot
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
