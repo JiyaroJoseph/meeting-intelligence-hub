@@ -28,10 +28,10 @@ export default function App() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/mission/:id" element={<MeetingDetail />} />
       </Routes>
-      <footer className="mt-16 border-t border-white/6 bg-slate-950/65 px-6 py-4">
-        <div className="text-center text-xs text-slate-500">
-          <p>{currentYear} Debrief. Meeting intelligence workspace.</p>
-          <p className="mt-1">Built for teams that need auditable decisions and fast execution.</p>
+      <footer className="mt-16 border-t border-white/6 bg-slate-950/65 px-4 py-4 md:px-6">
+        <div className="flex w-full flex-nowrap items-center justify-between gap-4 text-xs text-slate-500">
+          <p className="whitespace-nowrap">{currentYear} Debrief. Meeting intelligence workspace.</p>
+          <p className="ml-auto whitespace-nowrap text-right">Built for teams that need auditable decisions and fast execution.</p>
         </div>
       </footer>
     </div>
