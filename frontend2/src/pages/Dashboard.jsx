@@ -77,6 +77,14 @@ export default function Dashboard() {
     }
   }
 
+  const handleEditKeyDown = (e) => {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      e.preventDefault()
+      e.stopPropagation()
+      cancelEdit()
+    }
+  }
+
   const handleDelete = async (meetingId) => {
     try {
       setActionLoadingId(meetingId)
@@ -205,6 +213,7 @@ export default function Dashboard() {
                         e.stopPropagation()
                         saveName(m.id)
                       }}
+                      onKeyDown={handleEditKeyDown}
                       className="mt-3 flex flex-wrap items-center gap-2"
                     >
                       <input
