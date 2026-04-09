@@ -29,7 +29,10 @@ export default function App() {
         <Route path="/mission/:id" element={<MeetingDetail />} />
       </Routes>
       <footer className="mt-16 border-t border-white/6 bg-slate-950/65 px-6 py-4">
-        <p className="text-center text-xs text-slate-500">{currentYear} Debrief. Built for secure multi-meeting intelligence.</p>
+        <div className="text-center text-xs text-slate-500">
+          <p>{currentYear} Debrief. Meeting intelligence workspace.</p>
+          <p className="mt-1">Built for teams that need auditable decisions and fast execution.</p>
+        </div>
       </footer>
     </div>
   )
